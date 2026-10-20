@@ -1,1 +1,13 @@
-{"name":"ez2-student-survey","version":"2.0.0","private":true,"type":"module","scripts":{"test":"node --test tests/logic.test.mjs","start":"node serve.mjs"},"engines":{"node":">=18"}}
+{
+  "name": "ez2-student-survey",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/logic.test.mjs tests/backend.test.cjs",
+    "start": "node serve.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

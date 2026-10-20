@@ -3,7 +3,7 @@
  * This file never publishes the response sheet or returns stored answers.
  */
 const BACKEND_SETTINGS = Object.freeze({
-  sheetName: 'Responses',
+  sheetName: 'Responses_v2_1',
   maxPostBytes: 131072,
   maxPayloadCharacters: 32768,
   maxAnswerCharacters: 4096,
@@ -44,6 +44,8 @@ function setupSurveySheet() {
     const sheet = book.getSheetByName(BACKEND_SETTINGS.sheetName) || book.insertSheet(BACKEND_SETTINGS.sheetName);
     const headers = backendHeaders_();
     if (sheet.getLastRow() === 0) {
+      const currentColumns = sheet.getMaxColumns();
+      if (currentColumns < headers.length) sheet.insertColumnsAfter(currentColumns, headers.length - currentColumns);
       writeLiteralRow_(sheet, 1, headers);
       sheet.setFrozenRows(1);
     } else {

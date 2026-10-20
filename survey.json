@@ -1,5 +1,5 @@
 {
-  "version": "2.0",
+  "version": "2.1",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -7,8 +7,8 @@
     "BNS plans to offer shared electric vehicles on university campuses under the name eZ2 Wheels: eZ2 S (electric scooters) and eZ2 B (electric bikes). You use the BNS app to unlock a vehicle, ride it, and leave it at the end of your trip; you do not buy the vehicle."
   ],
   "productIntro": [
-    "eZ2 S (scooters): pick up the nearest available scooter anywhere on campus with the app; the in-app location pointer shows where to leave it closest to your destination; typical range 3–5 miles; it locks automatically if you ride outside the campus boundary; charging stations are placed around campus.",
-    "eZ2 B (bikes): take an e-bike from a designated bike stand, ride it for as long as you like (e.g., for the day), and return it to any designated stand on campus; charging stations are provided."
+    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nDrop-off: The app shows where to leave it closest to your destination.\nRange: Typically 3–5 miles.\nCampus boundary: It locks automatically if you ride outside the campus boundary.\nCharging: Stations are located around campus.",
+    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand.\nRide time: Ride for as long as you like, including for the day.\nReturn: Return it to any designated bike stand on campus.\nCharging: Stations are available."
   ],
   "pricingIntro": "The prices below are hypothetical scenarios for this survey. The same three pricing scenarios apply separately to eZ2 S (electric scooters) and eZ2 B (electric bikes). Please consider the plans for each offering you are interested in.",
   "plans": [
@@ -117,13 +117,40 @@
           "number": 4,
           "oldRef": "Q4",
           "variable": "V_Q4",
-          "text": "What is your age in years?",
-          "type": "number",
-          "options": [],
+          "text": "What is your age?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "17 or younger"
+            },
+            {
+              "value": 2,
+              "label": "18–19"
+            },
+            {
+              "value": 3,
+              "label": "20–21"
+            },
+            {
+              "value": 4,
+              "label": "22–23"
+            },
+            {
+              "value": 5,
+              "label": "24–25"
+            },
+            {
+              "value": 6,
+              "label": "26–29"
+            },
+            {
+              "value": 7,
+              "label": "30 or older"
+            }
+          ],
           "required": true,
           "condition": "eligible",
-          "min": 0,
-          "decimals": 0,
           "exportFields": [
             "V_Q4"
           ]
@@ -160,14 +187,36 @@
           "number": 6,
           "oldRef": "Q6",
           "variable": "V_Q6",
-          "text": "About how far (in miles) is it from where you live to your classes?",
-          "type": "number",
-          "options": [],
+          "text": "About how far is it from where you live to your classes?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than 0.5 miles"
+            },
+            {
+              "value": 2,
+              "label": "0.5 to less than 1 mile"
+            },
+            {
+              "value": 3,
+              "label": "1 to less than 2 miles"
+            },
+            {
+              "value": 4,
+              "label": "2 to less than 3 miles"
+            },
+            {
+              "value": 5,
+              "label": "3–5 miles"
+            },
+            {
+              "value": 6,
+              "label": "More than 5 miles"
+            }
+          ],
           "required": true,
           "condition": "eligible",
-          "min": 0,
-          "decimals": 1,
-          "help": "Enter the distance in miles.",
           "exportFields": [
             "V_Q6"
           ]
@@ -313,13 +362,39 @@
           "oldRef": "Unnumbered monthly-spending item (original V_Q11)",
           "variable": "V_Q11",
           "text": "About how much do you spend per month on getting around (transit passes, rideshare, parking, gas, shared vehicles)?",
-          "type": "number",
-          "options": [],
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "$0"
+            },
+            {
+              "value": 2,
+              "label": "More than $0 but less than $20"
+            },
+            {
+              "value": 3,
+              "label": "$20 to less than $50"
+            },
+            {
+              "value": 4,
+              "label": "$50 to less than $100"
+            },
+            {
+              "value": 5,
+              "label": "$100 to less than $150"
+            },
+            {
+              "value": 6,
+              "label": "$150 to less than $200"
+            },
+            {
+              "value": 7,
+              "label": "$200 or more"
+            }
+          ],
           "required": true,
           "condition": "eligible",
-          "min": 0,
-          "decimals": 2,
-          "help": "Enter a dollar amount. Enter 0 if none.",
           "exportFields": [
             "V_Q11"
           ]
@@ -335,7 +410,7 @@
           "number": 12,
           "oldRef": "Q10 (shared-vehicle-use frequency)",
           "variable": "V_Q12",
-          "text": "How often have you used a shared e-scooter or e-bike for commuting before?",
+          "text": "How often have you used a shared e-scooter or e-bike for commuting?",
           "type": "single",
           "options": [
             {
@@ -449,57 +524,9 @@
         {
           "id": "Q15",
           "number": 15,
-          "oldRef": "Q16",
-          "variable": "V_Q15",
-          "text": "How interested would you be in using each of the following shared vehicle types to commute on campus?",
-          "type": "product_scale",
-          "options": [
-            {
-              "value": 1,
-              "label": "1 = Not at all interested"
-            },
-            {
-              "value": 2,
-              "label": "2"
-            },
-            {
-              "value": 3,
-              "label": "3"
-            },
-            {
-              "value": 4,
-              "label": "4"
-            },
-            {
-              "value": 5,
-              "label": "5 = Extremely interested"
-            }
-          ],
-          "required": true,
-          "condition": "eligible",
-          "products": [
-            "S",
-            "B"
-          ],
-          "min": 1,
-          "max": 5,
-          "decimals": 0,
-          "productConditions": {
-            "S": "eligible",
-            "B": "eligible"
-          },
-          "help": "Choose one answer for each offering. 1 = Not at all interested; 5 = Extremely interested.",
-          "exportFields": [
-            "V_Q15_S",
-            "V_Q15_B"
-          ]
-        },
-        {
-          "id": "Q16",
-          "number": 16,
           "oldRef": "Q17",
-          "variable": "V_Q16",
-          "text": "How much do you like the idea of each offering (the product and how it works)?",
+          "variable": "V_Q15",
+          "text": "How much do you like each offering, considering both the product and how it works?",
           "type": "product_scale",
           "options": [
             {
@@ -548,7 +575,7 @@
             }
           ],
           "required": true,
-          "condition": "any_interest",
+          "condition": "eligible",
           "products": [
             "S",
             "B"
@@ -557,10 +584,58 @@
           "max": 10,
           "decimals": 0,
           "productConditions": {
-            "S": "interested_S",
-            "B": "interested_B"
+            "S": "eligible",
+            "B": "eligible"
           },
-          "help": "Choose one answer for each offering shown. All whole-number responses from 0 through 10 are available.",
+          "help": "Choose one answer for each offering. 0 = Not at all; 10 = A great deal.",
+          "exportFields": [
+            "V_Q15_S",
+            "V_Q15_B"
+          ]
+        },
+        {
+          "id": "Q16",
+          "number": 16,
+          "oldRef": "Q16",
+          "variable": "V_Q16",
+          "text": "How interested would you be in using each type of shared electric vehicle for commuting on campus?",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Not at all interested"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5 = Extremely interested"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 5,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "help": "Choose one answer for each offering. 1 = Not at all interested; 5 = Extremely interested.",
           "exportFields": [
             "V_Q16_S",
             "V_Q16_B"
@@ -888,7 +963,7 @@
     {
       "id": "charger",
       "title": "Section 6 – Charger Program",
-      "description": "BNS also plans a separate “charger” version of the app. Students can earn money by charging eZ2 vehicles at charging stations so they are ready for riders.",
+      "description": "BNS also plans to add a separate “charger” version of the app. Students can earn money by charging eZ2 vehicles at charging stations so they are ready for riders.",
       "questions": [
         {
           "id": "Q22",
@@ -956,7 +1031,7 @@
           "number": 24,
           "oldRef": "Q23",
           "variable": "V_Q24",
-          "text": "About how many total rental minutes would you expect to use each offering in a typical week?",
+          "text": "About how many total hours would you expect to use each offering in a typical week?",
           "type": "product_number",
           "options": [],
           "required": true,
@@ -970,12 +1045,13 @@
             "B": "interested_B"
           },
           "min": 0,
-          "decimals": 0,
-          "help": "Enter minutes per week. Enter 0 if you would not use it.",
+          "decimals": 2,
+          "help": "Enter hours per week (for example, 0.5 for 30 minutes). Enter 0 if you would not use it.",
           "exportFields": [
             "V_Q24_S",
             "V_Q24_B"
-          ]
+          ],
+          "max": 168
         },
         {
           "id": "Q25",
@@ -1008,7 +1084,7 @@
           "number": 26,
           "oldRef": "Q25",
           "variable": "V_Q26",
-          "text": "What maximum amount per month could you allocate to paid travel within campus, excluding travel to and from campus?",
+          "text": "What maximum amount per month could you allocate to paid travel in and around campus, excluding travel to and from campus?",
           "type": "number",
           "options": [],
           "required": true,
@@ -1292,7 +1368,7 @@
           "number": 31,
           "oldRef": "Q30",
           "variable": "V_Q31",
-          "text": "If you could buy an eZ2 vehicle of your own for use off campus, how likely would you be to buy one?",
+          "text": "If you could buy (instead of renting) an eZ2 vehicle of your own for use off campus, how likely would you be to buy one?",
           "type": "scale",
           "options": [
             {

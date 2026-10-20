@@ -2,7 +2,15 @@
 
 英文受访者页面，33 道主问题，按兴趣、使用经历、充电兴趣与各产品方案选择显示后续问题。无第三方 CDN、无前端框架，无须安装 npm 依赖。此目录是完整源码；源码交付不代表已经上线。
 
-## 部署顺序
+## 本次 2.1 修订
+
+本目录包含问卷 2.1 的网站与配套收集端源码，config.json 使用 2.1 专用的正式投递地址。
+升级现有网站时，在原 Apps Script 项目中创建 2.1 的新部署，保留原 2.0 部署；确认新收集端就绪后，将新 /exec URL 写入 config.json，再发布本目录到原 GitHub 仓库。无需新建仓库。
+2.1 页面、模块、样式和问卷配置使用 ?v=2.1 资源地址，避免复用旧版本缓存。已经加载的 2.0 答卷可继续向原部署提交；刷新或重新打开问卷后使用 2.1。
+2.1 接收端创建 Responses_v2_1，保留原 Responses；2.0 与 2.1 的 Q4/Q6/Q11、Q15/Q16、Q24 不可按同一含义直接合并。
+Q4/Q6/Q11 为分类代码；Q24 为每周小时（支持两位小数、0–168）。
+
+## 从零搭建时的部署顺序
 
 1. 按 [Google Sheets 收集端说明](google-sheets/README.md) 创建私有表格与 Apps Script，完成管理员授权和 Web app 部署。表格保持“受限”，受访者只获得投递入口，不能读取所有回答。
 2. 将得到的 `https://script.google.com/macros/s/部署ID/exec` 写入 [config.json](config.json) 的 `submissionEndpoint`。URL 为空时页面明确显示 **Preview mode**，正式提交按钮禁用。
@@ -21,14 +29,14 @@ npm test
 npm start
 ```
 
-打开 `http://127.0.0.1:4173`。也可以直接运行 `node --test tests/logic.test.mjs` 和 `node serve.mjs`。不要直接双击 `index.html`：浏览器对 `file://` 的模块和 JSON 读取有限制。
+打开 `http://127.0.0.1:4173`。也可以直接运行 `node --test tests/logic.test.mjs tests/backend.test.cjs` 和 `node serve.mjs`。不要直接双击 `index.html`：浏览器对 `file://` 的模块和 JSON 读取有限制。
 
 测试覆盖完整量表、33 主问题、576 种兴趣/经历/充电/方案组合、回改清理、Other 说明、空值与 0 区分、98 导出变量、二元多选编码、数字校验、方案顺序、CSV 转义及导入校验。后端另有模拟存储测试；模拟测试不能替代真实部署验证。
 
 ## 问卷与数据规则
 
 - `survey.json` 是受访者措辞、题号、代码和条件的唯一前端配置。统一新版编号 Q1–Q33，保留旧编号映射 `oldRef` 供研究人员追踪，页面不展示内部备注。
-- Q15 先收集 Scooter 与 Bike 两个兴趣答案；两者答完后再显示相关喜好/拒绝原因。Q18–Q22保留给所有合格受访者；两种产品都不感兴趣的人仍可回答态度、充电兴趣和最后意见。
+- Q15 先向所有合格者收集两种产品的喜欢程度（0–10），双答后显示 Q16 使用兴趣（1–5）；Q16 双答后显示对应的 Q17 拒绝原因。所有后续兴趣判断均使用 Q16。Q18–Q22保留给所有合格受访者；两种产品都不感兴趣的人仍可回答态度、充电兴趣和最后意见。
 - 每产品的使用量、接近车辆的步行时间、方案及原因分别判断。回到前面改答后，所有不适用的旧答案和 Other 文本自动清除。
 - 0–10 包含全部 11 个整数；1–10 包含全部 10 个整数。手机上每个产品独立卡片，量表数字自动换行。
 - 三个收费方案显示顺序在当前答卷会话内固定随机，代码 1/2/3 始终不变；None 始终最后，代码 4。价格明确标为 hypothetical scenarios。
@@ -48,7 +56,8 @@ npm start
 | 文件 | 用途 |
 |---|---|
 | `index.html` / `app.mjs` / `styles.css` | 受访者页面与交互 |
-| `survey.json` | 问卷 v2.0 内容和数据字段 |
+| `survey.json` | 问卷 v2.1 内容和数据字段 |
+| `product-intro.mjs` | 产品说明标题与分点的显示组件 |
 | `logic.mjs` | 条件、清理、校验、导出的纯函数 |
 | `config.json` | 公开投递 URL；未配置即预览模式 |
 | `google-sheets/` | 私有 Sheet 的 Apps Script 收集端及说明 |
@@ -56,6 +65,6 @@ npm start
 | `tests/logic.test.mjs` | 无依赖 Node 逻辑测试 |
 | `serve.mjs` | 本地预览服务器 |
 
-更改题目/编码/条件时，同步 Google Apps Script 的 Schema/Logic、更新问卷版本并重新测试；不要让两端规则不一致。
+本次涉及类型、单位和分支改变，前后端必须同步升级。后续若仅润色文字且不改变题意、代码和规则，技术上无需升版本或重新部署后端；仍建议同步存档和数据字典。
 
 官方部署参考：[创建 GitHub Pages 网站](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)、[Apps Script Web apps](https://developers.google.com/apps-script/guides/web)。
