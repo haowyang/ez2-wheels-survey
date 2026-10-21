@@ -3,7 +3,7 @@
  * This file never publishes the response sheet or returns stored answers.
  */
 const BACKEND_SETTINGS = Object.freeze({
-  sheetName: 'Responses_v2_1',
+  sheetName: 'Responses_v2_2',
   maxPostBytes: 131072,
   maxPayloadCharacters: 32768,
   maxAnswerCharacters: 4096,

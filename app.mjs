@@ -1,5 +1,5 @@
-import {productIntroHtml} from './product-intro.mjs?v=2.1';
-import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.1';
+import {productIntroHtml} from './product-intro.mjs?v=2.2';
+import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.2';
 
 const app=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -88,7 +88,7 @@ function render(scroll=false){
   if(scroll){window.scrollTo({top:0});app.focus();}
 }
 try{
-  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.1'),fetch('./config.json?v=2.1')]);
+  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.2'),fetch('./config.json?v=2.2')]);
   if(!schemaResult.ok||!configResult.ok)throw new Error('The survey configuration could not be loaded.');
   schema=await schemaResult.json();config=await configResult.json();
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');state=saved?.version===schema.version?saved:freshState();}catch{state=freshState();storageAvailable=false;}

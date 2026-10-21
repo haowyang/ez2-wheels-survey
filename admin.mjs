@@ -1,5 +1,5 @@
-import {verifyImportedRecord, recordsToCsv} from './logic.mjs?v=2.1';
-const schema=await fetch('./survey.json?v=2.1').then(r=>{if(!r.ok)throw new Error('Survey schema could not load.');return r.json();});
+import {verifyImportedRecord, recordsToCsv} from './logic.mjs?v=2.2';
+const schema=await fetch('./survey.json?v=2.2').then(r=>{if(!r.ok)throw new Error('Survey schema could not load.');return r.json();});
 const records=new Map();
 const status=document.querySelector('#import-status');
 function refresh(){

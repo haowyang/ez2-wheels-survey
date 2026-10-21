@@ -1,6 +1,6 @@
-// Survey 2.1: categorical background fields and hours per week.
+// Survey 2.2: Pierre revisions.
 const SURVEY_SCHEMA = {
-  "version": "2.1",
+  "version": "2.2",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -83,7 +83,7 @@ const SURVEY_SCHEMA = {
           "number": 3,
           "oldRef": "Q3",
           "variable": "V_Q3",
-          "text": "What is your year in school?",
+          "text": "What is your current year in school?",
           "type": "single",
           "options": [
             {
@@ -118,7 +118,7 @@ const SURVEY_SCHEMA = {
           "number": 4,
           "oldRef": "Q4",
           "variable": "V_Q4",
-          "text": "What is your age?",
+          "text": "What is your age range?",
           "type": "single",
           "options": [
             {
@@ -127,27 +127,23 @@ const SURVEY_SCHEMA = {
             },
             {
               "value": 2,
-              "label": "18–19"
+              "label": "18-21"
             },
             {
               "value": 3,
-              "label": "20–21"
+              "label": "22-24"
             },
             {
               "value": 4,
-              "label": "22–23"
+              "label": "25-27"
             },
             {
               "value": 5,
-              "label": "24–25"
+              "label": "28-30"
             },
             {
               "value": 6,
-              "label": "26–29"
-            },
-            {
-              "value": 7,
-              "label": "30 or older"
+              "label": "Above 30"
             }
           ],
           "required": true,
@@ -188,7 +184,7 @@ const SURVEY_SCHEMA = {
           "number": 6,
           "oldRef": "Q6",
           "variable": "V_Q6",
-          "text": "About how far is it from where you live to your classes?",
+          "text": "If you live on campus, how far is the typical distance to your classes? Choose NA if you do not live on campus.",
           "type": "single",
           "options": [
             {
@@ -212,14 +208,17 @@ const SURVEY_SCHEMA = {
               "label": "3–5 miles"
             },
             {
-              "value": 6,
-              "label": "More than 5 miles"
+              "value": 99,
+              "label": "NA"
             }
           ],
           "required": true,
           "condition": "eligible",
           "exportFields": [
             "V_Q6"
+          ],
+          "missingValues": [
+            99
           ]
         },
         {
@@ -362,7 +361,7 @@ const SURVEY_SCHEMA = {
           "number": 11,
           "oldRef": "Unnumbered monthly-spending item (original V_Q11)",
           "variable": "V_Q11",
-          "text": "About how much do you spend per month on getting around (transit passes, rideshare, parking, gas, shared vehicles)?",
+          "text": "Around how much do you spend on getting around every month (transit passes, rideshare, parking, gas, shared vehicles)?",
           "type": "single",
           "options": [
             {
@@ -411,7 +410,7 @@ const SURVEY_SCHEMA = {
           "number": 12,
           "oldRef": "Q10 (shared-vehicle-use frequency)",
           "variable": "V_Q12",
-          "text": "How often have you used a shared e-scooter or e-bike for commuting?",
+          "text": "How often, if ever, do you use a shared e-scooter or e-bike?",
           "type": "single",
           "options": [
             {
@@ -420,19 +419,19 @@ const SURVEY_SCHEMA = {
             },
             {
               "value": 2,
-              "label": "Once or twice"
+              "label": "I have tried it once or twice, but don't use it regularly"
             },
             {
               "value": 3,
-              "label": "A few times a semester"
+              "label": "Less than once a month"
             },
             {
               "value": 4,
-              "label": "Monthly"
+              "label": "1–3 times a month"
             },
             {
               "value": 5,
-              "label": "Weekly or more"
+              "label": "Once a week or more"
             }
           ],
           "required": true,
@@ -1085,7 +1084,7 @@ const SURVEY_SCHEMA = {
           "number": 26,
           "oldRef": "Q25",
           "variable": "V_Q26",
-          "text": "What maximum amount per month could you allocate to paid travel in and around campus, excluding travel to and from campus?",
+          "text": "What is the maximum amount per month you would be willing to spend on getting between locations on campus (not including travel to and from campus)?",
           "type": "number",
           "options": [],
           "required": true,
@@ -1431,7 +1430,7 @@ const SURVEY_SCHEMA = {
           "number": 32,
           "oldRef": "Q31",
           "variable": "V_Q32",
-          "text": "Would you tell friends or family about eZ2 Wheels, share it on social media, or otherwise recommend it (act as a product ambassador)?",
+          "text": "Would you tell friends or family about eZ2 Wheels, share it on social media, or otherwise recommend it?",
           "type": "single",
           "options": [
             {

@@ -14,7 +14,7 @@ const siteRoot = path.resolve(__dirname, '..');
 const source = ['Schema.gs', 'Logic.gs', 'Code.gs']
   .map(name => fs.readFileSync(path.join(siteRoot, 'google-sheets', name), 'utf8')).join('\n');
 const copy = value => JSON.parse(JSON.stringify(value));
-const NEW_SHEET = 'Responses_v2_1';
+const NEW_SHEET = 'Responses_v2_2';
 const successText = /Your response has been saved/;
 
 function harness({ initialize = true } = {}) {
@@ -126,7 +126,7 @@ function harness({ initialize = true } = {}) {
   function packet(overrides = {}) {
     nextId++;
     return {
-      schemaVersion: '2.1',
+      schemaVersion: '2.2',
       responseId: '11111111-1111-4111-8111-' + String(nextId).padStart(12, '0'),
       startedAt: '2026-10-20T12:00:00.000Z',
       completedAt: '2026-10-20T12:05:00.000Z',
@@ -151,10 +151,10 @@ function harness({ initialize = true } = {}) {
   return { context, schema, state, sheets, properties, packet, event, submit, rows, cell, unchangedLegacy, Sheet };
 }
 
-test('backend and frontend use the same v2.1 schema: Q15 liking, Q16 interest, both required for eligible respondents', () => {
+test('backend and frontend use the same v2.2 schema: Q15 liking, Q16 interest, both required for eligible respondents', () => {
   const h = harness();
   assert.deepEqual(h.schema, JSON.parse(fs.readFileSync(path.join(siteRoot, 'survey.json'), 'utf8')));
-  assert.equal(h.schema.version, '2.1');
+  assert.equal(h.schema.version, '2.2');
   const q = id => h.schema.sections.flatMap(s => s.questions).find(item => item.id === id);
   assert.match(q('Q15').text, /like/);
   assert.deepEqual([q('Q15').min, q('Q15').max, q('Q15').condition, q('Q15').required], [0, 10, 'eligible', true]);
@@ -241,20 +241,20 @@ test('setup also expands an already-created empty new tab, and preserves wider e
 
 test('all Q4/Q6/Q11 category codes are accepted and stored as their codes', () => {
   const h = harness();
-  for (const [id, highest] of [['Q4', 7], ['Q6', 6], ['Q11', 7]]) {
+  for (const [id, highest] of [['Q4', 6], ['Q6', 5], ['Q11', 7]]) {
     for (let value = 1; value <= highest; value++) {
       assert.match(h.submit(h.packet({ [id]: value })), successText);
       assert.equal(h.cell('V_' + id), String(value));
       assert.equal(h.cell('V_' + id + '__asked'), '1');
     }
   }
-  assert.equal(h.rows(), 21);
+  assert.equal(h.rows(), 19);
   h.unchangedLegacy();
 });
 
 test('invalid category codes and old numeric measurements outside the code set are rejected', () => {
   const h = harness();
-  const cases = { Q4: [0, 8, 21, 1.5, '', [2]], Q6: [0, 7, 0.5, 2.5, '', [2]], Q11: [0, 8, 50, 1.5, '', [2]] };
+  const cases = { Q4: [0, 7, 8, 21, 1.5, '', [2]], Q6: [0, 6, 7, 0.5, 2.5, '', [2]], Q11: [0, 8, 50, 1.5, '', [2]] };
   for (const [id, values] of Object.entries(cases)) for (const value of values) {
     const html = h.submit(h.packet({ [id]: value }));
     assert.match(html, /could not be saved/);
@@ -310,7 +310,7 @@ test('valid receipt matches the saved ID/time; server recomputes derived values 
   assert.match(receivedAt, /^\d{4}-\d{2}-\d{2}T.+Z$/);
   assert.ok(html.includes(receivedAt));
   assert.equal(h.cell('submission_id'), input.responseId);
-  assert.equal(h.cell('survey_version'), '2.1');
+  assert.equal(h.cell('survey_version'), '2.2');
   assert.equal(h.cell('V_Q1'), '1');
   assert.equal(h.cell('V_Q24_S'), '0.5');
   assert.equal(h.cell('V_Q17_7_S'), '');
@@ -435,4 +435,108 @@ test('GET and failure pages do not disclose stored answers or accept a payload r
   assert.ok(!html.includes('attacker.example'));
   assert.ok(html.includes(h.properties.RETURN_URL));
   assert.equal(h.rows(), 2);
+});
+
+test('v2.2 receiver rejects v2.1 packets even when the old codes look valid', () => {
+  const h = harness();
+  const packet = h.packet();
+  packet.schemaVersion = '2.1';
+  assert.match(h.submit(packet), /version is no longer accepted/);
+  assert.equal(h.rows(), 1);
+  h.unchangedLegacy();
+});
+
+test('Q6 NA is accepted as an answer but saved as blank with asked=1; forged flat values are ignored', () => {
+  const h = harness();
+  for (const value of [99, '99']) {
+    const packet = h.packet({ Q5: 2, Q6: value });
+    packet.flat = { V_Q6: 99, V_Q6__asked: 0 };
+    packet.asked = { Q6: false };
+    assert.match(h.submit(packet), successText);
+    assert.equal(h.cell('V_Q6'), '');
+    assert.equal(h.cell('V_Q6__asked'), '1');
+    const canonical = h.context.canonicalRecord_(packet);
+    assert.equal(canonical.answers.Q6, value);
+    assert.equal(canonical.flat.V_Q6, '');
+    assert.equal(canonical.flat.V_Q6__asked, 1);
+  }
+  const blank = h.packet({ Q5: 2, Q6: '' });
+  assert.match(h.submit(blank), /could not be saved/);
+  assert.equal(h.rows(), 3);
+  h.unchangedLegacy();
+});
+
+test('Q12 experience codes 2-5 save location/reliability; Never clears them and Other text', () => {
+  const h = harness();
+  for (const value of [2, 3, 4, 5, '2', '5']) {
+    assert.match(h.submit(h.packet({ Q12: value, Q13: [4], Q13__4_text: 'Test city', Q14: 5 })), successText);
+    assert.equal(h.cell('V_Q13_4'), '1');
+    assert.equal(h.cell('V_Q13_Other_txt'), 'Test city');
+    assert.equal(h.cell('V_Q14'), '5');
+  }
+  assert.match(h.submit(h.packet({ Q12: 1, Q13: [4], Q13__4_text: 'Discard me', Q14: 5 })), successText);
+  for (const field of ['V_Q13_4', 'V_Q13_Other_txt', 'V_Q14']) {
+    assert.equal(h.cell(field), '');
+    assert.equal(h.cell(field + '__asked'), '0');
+  }
+  const before = h.rows();
+  for (const value of ['', null, 0, 6, 99, 2.5, [2], true]) {
+    assert.match(h.submit(h.packet({ Q12: value })), /could not be saved/);
+    assert.equal(h.context.conditionMet('experienced', { Q1: 1, Q12: value }), false);
+  }
+  assert.equal(h.rows(), before);
+});
+
+test('every question and product is checked by the receiver for valid choices, missing/invalid values and Other', () => {
+  const h = harness();
+  const questions = h.schema.sections.flatMap(s => s.questions);
+  const allAnswers = { Q1: 1, Q12: 2, Q16_S: 5, Q16_B: 5, Q22: 5, Q27_S: 1, Q27_B: 1 };
+  for (const q of questions) for (const product of q.products || [null]) {
+    const key = q.id + (product ? '_' + product : '');
+    const type = q.type.replace('product_', '');
+    if (!Object.hasOwn(allAnswers, key)) allAnswers[key] = type === 'text' ? 'Test text' : type === 'multi' ? [q.options[0].value] : type === 'single' ? q.options[0].value : q.min || 0;
+    for (const option of q.options.filter(o => o.other)) allAnswers[key + '__' + option.value + '_text'] = 'Specific test explanation';
+  }
+  let checkedKeys = 0;
+  for (const q of questions) for (const product of q.products || [null]) {
+    const key = q.id + (product ? '_' + product : ''), type = q.type.replace('product_', '');
+    const active = { ...copy(allAnswers) };
+    if (q.id === 'Q17') active['Q16_' + product] = 1;
+    if (q.id === 'Q29') active['Q27_' + product] = 4;
+    const validValues = type === 'single' || type === 'scale' ? q.options.map(o => o.value) : type === 'multi' ? q.options.map(o => [o.value]) : type === 'text' ? ['Valid text'] : [q.min || 0, q.max || 1];
+    for (const value of validValues) {
+      const packet = h.packet({ ...active, [key]: value });
+      const html = h.submit(packet);
+      if (q.id === 'Q1' && value === 0) assert.match(html, /No response was saved/);
+      else assert.match(html, successText, key + '=' + JSON.stringify(value));
+    }
+    const missing = h.packet(active); delete missing.answers[key];
+    if (q.required) assert.match(h.submit(missing), /could not be saved/, key + ' missing');
+    else assert.match(h.submit(missing), successText, key + ' optional');
+    const invalid = type === 'text' ? 'x'.repeat(q.maxLength + 1) : type === 'multi' ? [-999] : -999;
+    const before = h.rows();
+    assert.match(h.submit(h.packet({ ...active, [key]: invalid })), /could not be saved/, key + ' invalid');
+    assert.equal(h.rows(), before);
+    for (const option of q.options.filter(o => o.other)) {
+      const selected = h.packet({ ...active, [key]: [option.value] });
+      delete selected.answers[key + '__' + option.value + '_text'];
+      assert.match(h.submit(selected), /could not be saved/, key + ' requires detail');
+    }
+    checkedKeys++;
+  }
+  assert.equal(checkedKeys, questions.reduce((n,q)=>n+(q.products?.length||1),0));
+  assert.ok(h.state.writes.every(write => write.sheet === NEW_SHEET));
+  h.unchangedLegacy();
+});
+
+test('optional Q33 accepts omitted or blank text but rejects arrays and non-text values', () => {
+  const h = harness();
+  const omitted = h.packet(); delete omitted.answers.Q33;
+  assert.match(h.submit(omitted), successText);
+  assert.match(h.submit(h.packet({Q33:''})), successText);
+  const before = h.rows();
+  for(const value of [[], ['text'], {}, true, 99])
+    assert.match(h.submit(h.packet({Q33:value})), /could not be saved/, JSON.stringify(value));
+  assert.equal(h.rows(), before);
+  h.unchangedLegacy();
 });

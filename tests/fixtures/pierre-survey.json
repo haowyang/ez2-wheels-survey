@@ -1,0 +1,1470 @@
+{
+  "version": "2.1",
+  "title": "eZ2 Wheels Student Survey",
+  "intro": [
+    "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
+    "The questionnaire does not ask for your name, email address, or student ID.",
+    "BNS plans to offer shared electric vehicles on university campuses under the name eZ2 Wheels: eZ2 S (electric scooters) and eZ2 B (electric bikes). You use the BNS app to unlock a vehicle, ride it, and leave it at the end of your trip; you do not buy the vehicle."
+  ],
+  "productIntro": [
+    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nDrop-off: The app shows where to leave it closest to your destination.\nRange: Typically 3–5 miles.\nCampus boundary: It locks automatically if you ride outside the campus boundary.\nCharging: Stations are located around campus.",
+    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand.\nRide time: Ride for as long as you like, including for the day.\nReturn: Return it to any designated bike stand on campus.\nCharging: Stations are available."
+  ],
+  "pricingIntro": "The prices below are hypothetical scenarios for this survey. The same three pricing scenarios apply separately to eZ2 S (electric scooters) and eZ2 B (electric bikes). Please consider the plans for each offering you are interested in.",
+  "plans": [
+    {
+      "value": 1,
+      "label": "Scheme 1 – Pay per use",
+      "description": "$12 per hour of riding, billed by the minute. No unlock fee. No commitment."
+    },
+    {
+      "value": 2,
+      "label": "Scheme 2 – Semester subscription",
+      "description": "$120 flat per semester (about 16 weeks). Unlimited riding."
+    },
+    {
+      "value": 3,
+      "label": "Scheme 3 – Hybrid",
+      "description": "$15 per month covers your first 3 hours of riding each month; each additional hour is $10, billed by the minute."
+    }
+  ],
+  "sections": [
+    {
+      "id": "screening",
+      "title": "Section 1 – Screener",
+      "questions": [
+        {
+          "id": "Q1",
+          "number": 1,
+          "oldRef": "Q1",
+          "variable": "V_Q1",
+          "text": "Are you currently enrolled as a student at a large public university in the U.S.?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes"
+            },
+            {
+              "value": 0,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "always",
+          "exportFields": [
+            "V_Q1"
+          ]
+        },
+        {
+          "id": "Q2",
+          "number": 2,
+          "oldRef": "Q2",
+          "variable": "V_Q2",
+          "text": "Which university do you attend?",
+          "type": "text",
+          "options": [],
+          "required": true,
+          "condition": "eligible",
+          "maxLength": 40,
+          "exportFields": [
+            "V_Q2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "title": "Section 2 – About You",
+      "questions": [
+        {
+          "id": "Q3",
+          "number": 3,
+          "oldRef": "Q3",
+          "variable": "V_Q3",
+          "text": "What is your current year in school?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "First-year"
+            },
+            {
+              "value": 2,
+              "label": "Sophomore"
+            },
+            {
+              "value": 3,
+              "label": "Junior"
+            },
+            {
+              "value": 4,
+              "label": "Senior"
+            },
+            {
+              "value": 5,
+              "label": "Graduate / professional"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q3"
+          ]
+        },
+        {
+          "id": "Q4",
+          "number": 4,
+          "oldRef": "Q4",
+          "variable": "V_Q4",
+          "text": "What is your age range?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "17 or younger"
+            },
+            {
+              "value": 2,
+              "label": "18-21"
+            },
+            {
+              "value": 3,
+              "label": "22-24"
+            },
+            {
+              "value": 4,
+              "label": "25-27"
+            },
+            {
+              "value": 5,
+              "label": "28-30"
+            },
+            {
+              "value": 6,
+              "label": "Above 30"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q4"
+          ]
+        },
+        {
+          "id": "Q5",
+          "number": 5,
+          "oldRef": "Q5",
+          "variable": "V_Q5",
+          "text": "Where do you live during the semester?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "On campus"
+            },
+            {
+              "value": 2,
+              "label": "Off campus, within walking distance of campus"
+            },
+            {
+              "value": 3,
+              "label": "Off campus, need to commute to campus"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q5"
+          ]
+        },
+        {
+          "id": "Q6",
+          "number": 6,
+          "oldRef": "Q6",
+          "variable": "V_Q6",
+          "text": "If you live on campus, how far is the typical distance to your classes? Choose NA if you do not live on campus.",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than 0.5 miles"
+            },
+            {
+              "value": 2,
+              "label": "0.5 to less than 1 mile"
+            },
+            {
+              "value": 3,
+              "label": "1 to less than 2 miles"
+            },
+            {
+              "value": 4,
+              "label": "2 to less than 3 miles"
+            },
+            {
+              "value": 5,
+              "label": "3–5 miles"
+            },
+            {
+              "value": 99,
+              "label": "NA"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q6"
+          ]
+        },
+        {
+          "id": "Q7",
+          "number": 7,
+          "oldRef": "Q7",
+          "variable": "V_Q7",
+          "text": "On how many days per week are you usually on campus?",
+          "type": "number",
+          "options": [],
+          "required": true,
+          "condition": "eligible",
+          "min": 0,
+          "max": 7,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q7"
+          ]
+        },
+        {
+          "id": "Q8",
+          "number": 8,
+          "oldRef": "Q8 (original variable V_Q10_1–V_Q10_8)",
+          "variable": "V_Q8",
+          "text": "How do you commute between locations on campus? (For example, from one class to the next, to purchase meals at the Student Center, or to visit the library/gym.) Select all that apply.",
+          "type": "multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Walk"
+            },
+            {
+              "value": 2,
+              "label": "Own bike"
+            },
+            {
+              "value": 3,
+              "label": "Own scooter / skateboard"
+            },
+            {
+              "value": 4,
+              "label": "Car"
+            },
+            {
+              "value": 5,
+              "label": "Campus shuttle / bus"
+            },
+            {
+              "value": 6,
+              "label": "Rideshare"
+            },
+            {
+              "value": 7,
+              "label": "Shared scooter / bike service"
+            },
+            {
+              "value": 8,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherField": "V_Q8_Other_txt"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q8_1",
+            "V_Q8_2",
+            "V_Q8_3",
+            "V_Q8_4",
+            "V_Q8_5",
+            "V_Q8_6",
+            "V_Q8_7",
+            "V_Q8_8",
+            "V_Q8_Other_txt"
+          ]
+        },
+        {
+          "id": "Q9",
+          "number": 9,
+          "oldRef": "Q9 (duplicate removed)",
+          "variable": "V_Q9",
+          "text": "Do you have regular access to a car?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes"
+            },
+            {
+              "value": 0,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q9"
+          ]
+        },
+        {
+          "id": "Q10",
+          "number": 10,
+          "oldRef": "Unnumbered time-importance item (original V_Q11)",
+          "variable": "V_Q10",
+          "text": "How important is reducing travel time when moving between locations on campus?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Not at all important"
+            },
+            {
+              "value": 2,
+              "label": "Slightly important"
+            },
+            {
+              "value": 3,
+              "label": "Moderately important"
+            },
+            {
+              "value": 4,
+              "label": "Very important"
+            },
+            {
+              "value": 5,
+              "label": "Extremely important"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q10"
+          ]
+        },
+        {
+          "id": "Q11",
+          "number": 11,
+          "oldRef": "Unnumbered monthly-spending item (original V_Q11)",
+          "variable": "V_Q11",
+          "text": "Around how much do you spend on getting around every month (transit passes, rideshare, parking, gas, shared vehicles)?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "$0"
+            },
+            {
+              "value": 2,
+              "label": "More than $0 but less than $20"
+            },
+            {
+              "value": 3,
+              "label": "$20 to less than $50"
+            },
+            {
+              "value": 4,
+              "label": "$50 to less than $100"
+            },
+            {
+              "value": 5,
+              "label": "$100 to less than $150"
+            },
+            {
+              "value": 6,
+              "label": "$150 to less than $200"
+            },
+            {
+              "value": 7,
+              "label": "$200 or more"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q11"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "title": "Section 3 – Getting Around Campus",
+      "questions": [
+        {
+          "id": "Q12",
+          "number": 12,
+          "oldRef": "Q10 (shared-vehicle-use frequency)",
+          "variable": "V_Q12",
+          "text": "How often, if ever, do you use a shared e-scooter or e-bike?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Never"
+            },
+            {
+              "value": 2,
+              "label": "I have tried it once or twice, but don't use it regularly"
+            },
+            {
+              "value": 3,
+              "label": "Less than once a month"
+            },
+            {
+              "value": 4,
+              "label": "1–3 times a month"
+            },
+            {
+              "value": 5,
+              "label": "Once a week or more"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q12"
+          ]
+        },
+        {
+          "id": "Q13",
+          "number": 13,
+          "oldRef": "Unnumbered past-location item (original V_Q13)",
+          "variable": "V_Q13",
+          "text": "Where have you used it in the past? Select all that apply.",
+          "type": "multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "On my own campus"
+            },
+            {
+              "value": 2,
+              "label": "Another university campus"
+            },
+            {
+              "value": 3,
+              "label": "In a city (e.g., downtown, near my home)"
+            },
+            {
+              "value": 4,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherField": "V_Q13_Other_txt"
+            }
+          ],
+          "required": true,
+          "condition": "experienced",
+          "exportFields": [
+            "V_Q13_1",
+            "V_Q13_2",
+            "V_Q13_3",
+            "V_Q13_4",
+            "V_Q13_Other_txt"
+          ]
+        },
+        {
+          "id": "Q14",
+          "number": 14,
+          "oldRef": "Unnumbered reliability item (original V_Q15)",
+          "variable": "V_Q14",
+          "text": "Based on your experience using shared vehicles, how reliable do you consider them for short-distance commuting?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Not at all reliable"
+            },
+            {
+              "value": 2,
+              "label": "Slightly reliable"
+            },
+            {
+              "value": 3,
+              "label": "Moderately reliable"
+            },
+            {
+              "value": 4,
+              "label": "Very reliable"
+            },
+            {
+              "value": 5,
+              "label": "Extremely reliable"
+            }
+          ],
+          "required": true,
+          "condition": "experienced",
+          "exportFields": [
+            "V_Q14"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interest",
+      "title": "Section 4 – Interest in eZ2 Wheels",
+      "questions": [
+        {
+          "id": "Q15",
+          "number": 15,
+          "oldRef": "Q17",
+          "variable": "V_Q15",
+          "text": "How much do you like each offering, considering both the product and how it works?",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = A great deal"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "help": "Choose one answer for each offering. 0 = Not at all; 10 = A great deal.",
+          "exportFields": [
+            "V_Q15_S",
+            "V_Q15_B"
+          ]
+        },
+        {
+          "id": "Q16",
+          "number": 16,
+          "oldRef": "Q16",
+          "variable": "V_Q16",
+          "text": "How interested would you be in using each type of shared electric vehicle for commuting on campus?",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Not at all interested"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5 = Extremely interested"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 5,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "help": "Choose one answer for each offering. 1 = Not at all interested; 5 = Extremely interested.",
+          "exportFields": [
+            "V_Q16_S",
+            "V_Q16_B"
+          ]
+        },
+        {
+          "id": "Q17",
+          "number": 17,
+          "oldRef": "Q18",
+          "variable": "V_Q17",
+          "text": "Since you selected that you are not interested, for each offering you are not interested in, select all the reasons that apply.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "I do not need additional on-campus transportation."
+            },
+            {
+              "value": 2,
+              "label": "I prefer my current way of getting around."
+            },
+            {
+              "value": 3,
+              "label": "The service would not cover the trips I need."
+            },
+            {
+              "value": 4,
+              "label": "Weather would make this option unsuitable for me."
+            },
+            {
+              "value": 5,
+              "label": "Using a smartphone app would be difficult for me."
+            },
+            {
+              "value": 6,
+              "label": "I need more information about the service."
+            },
+            {
+              "value": 7,
+              "label": "Other reason (specify separately for each service)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q17_Other_txt_S",
+                "B": "V_Q17_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "uninterested_S || uninterested_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "uninterested_S",
+            "B": "uninterested_B"
+          },
+          "exportFields": [
+            "V_Q17_1_S",
+            "V_Q17_2_S",
+            "V_Q17_3_S",
+            "V_Q17_4_S",
+            "V_Q17_5_S",
+            "V_Q17_6_S",
+            "V_Q17_7_S",
+            "V_Q17_Other_txt_S",
+            "V_Q17_1_B",
+            "V_Q17_2_B",
+            "V_Q17_3_B",
+            "V_Q17_4_B",
+            "V_Q17_5_B",
+            "V_Q17_6_B",
+            "V_Q17_7_B",
+            "V_Q17_Other_txt_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attitudes",
+      "title": "Section 5 – What You Think About Electric Bikes and Scooters",
+      "description": "For the statements about safety, comfort, and pickup and return requirements, rate each offering separately on a scale of 1 to 10, where 1 = Strongly disagree and 10 = Strongly agree.",
+      "questions": [
+        {
+          "id": "Q18",
+          "number": 18,
+          "oldRef": "Q19",
+          "variable": "V_Q18",
+          "text": "To what extent do you agree that electric bikes and scooters help reduce the environmental impact of transportation on campus?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "Disagree"
+            },
+            {
+              "value": 3,
+              "label": "Neutral"
+            },
+            {
+              "value": 4,
+              "label": "Agree"
+            },
+            {
+              "value": 5,
+              "label": "Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q18"
+          ]
+        },
+        {
+          "id": "Q19",
+          "number": 19,
+          "oldRef": "Q20a",
+          "variable": "V_Q19",
+          "text": "I would feel safe using this transportation option.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q19_S",
+            "V_Q19_B"
+          ]
+        },
+        {
+          "id": "Q20",
+          "number": 20,
+          "oldRef": "Q20b",
+          "variable": "V_Q20",
+          "text": "I would be comfortable operating this type of vehicle.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q20_S",
+            "V_Q20_B"
+          ]
+        },
+        {
+          "id": "Q21",
+          "number": 21,
+          "oldRef": "Q20c",
+          "variable": "V_Q21",
+          "text": "The pickup and return requirements would be convenient for me.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q21_S",
+            "V_Q21_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "charger",
+      "title": "Section 6 – Charger Program",
+      "description": "BNS also plans to add a separate “charger” version of the app. Students can earn money by charging eZ2 vehicles at charging stations so they are ready for riders.",
+      "questions": [
+        {
+          "id": "Q22",
+          "number": 22,
+          "oldRef": "Q21",
+          "variable": "V_Q22",
+          "text": "How interested, if at all, would you be in charging shared electric vehicles in exchange for compensation?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Not at all interested"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5 = Extremely interested"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "min": 1,
+          "max": 5,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q22"
+          ]
+        },
+        {
+          "id": "Q23",
+          "number": 23,
+          "oldRef": "Q22",
+          "variable": "V_Q23",
+          "text": "What is the minimum compensation per vehicle charged that would make you consider participating in this activity?",
+          "type": "number",
+          "options": [],
+          "required": true,
+          "condition": "charger_interest",
+          "min": 0,
+          "decimals": 2,
+          "help": "Enter a dollar amount per vehicle charged.",
+          "exportFields": [
+            "V_Q23"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "expected_use",
+      "title": "Section 7 – Expected Use",
+      "questions": [
+        {
+          "id": "Q24",
+          "number": 24,
+          "oldRef": "Q23",
+          "variable": "V_Q24",
+          "text": "About how many total hours would you expect to use each offering in a typical week?",
+          "type": "product_number",
+          "options": [],
+          "required": true,
+          "condition": "any_interest",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "interested_S",
+            "B": "interested_B"
+          },
+          "min": 0,
+          "decimals": 2,
+          "help": "Enter hours per week (for example, 0.5 for 30 minutes). Enter 0 if you would not use it.",
+          "exportFields": [
+            "V_Q24_S",
+            "V_Q24_B"
+          ],
+          "max": 168
+        },
+        {
+          "id": "Q25",
+          "number": 25,
+          "oldRef": "Q24",
+          "variable": "V_Q25",
+          "text": "What is the maximum amount of time (in minutes) you would be willing to walk to access an available electric bike or electric scooter on campus?",
+          "type": "product_number",
+          "options": [],
+          "required": true,
+          "condition": "any_interest",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "interested_S",
+            "B": "interested_B"
+          },
+          "min": 0,
+          "decimals": 0,
+          "help": "Enter minutes separately for each offering shown.",
+          "exportFields": [
+            "V_Q25_S",
+            "V_Q25_B"
+          ]
+        },
+        {
+          "id": "Q26",
+          "number": 26,
+          "oldRef": "Q25",
+          "variable": "V_Q26",
+          "text": "What is the maximum amount per month you would be willing to spend on getting between locations on campus (not including travel to and from campus)?",
+          "type": "number",
+          "options": [],
+          "required": true,
+          "condition": "any_interest",
+          "min": 0,
+          "decimals": 2,
+          "help": "Enter a dollar amount per month.",
+          "exportFields": [
+            "V_Q26"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pricing",
+      "title": "Section 8 – Pricing Preferences",
+      "questions": [
+        {
+          "id": "Q27",
+          "number": 27,
+          "oldRef": "Q26",
+          "variable": "V_Q27",
+          "text": "For each offering, which ONE pricing scheme would you prefer?",
+          "type": "product_single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Scheme 1 – Pay per use"
+            },
+            {
+              "value": 2,
+              "label": "Scheme 2 – Semester subscription"
+            },
+            {
+              "value": 3,
+              "label": "Scheme 3 – Hybrid"
+            },
+            {
+              "value": 4,
+              "label": "None of these (would not choose any)"
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "interested_S",
+            "B": "interested_B"
+          },
+          "exportFields": [
+            "V_Q27_S",
+            "V_Q27_B"
+          ]
+        },
+        {
+          "id": "Q28",
+          "number": 28,
+          "oldRef": "Q27",
+          "variable": "V_Q28",
+          "text": "Why did you choose that scheme? Select all that apply for each offering shown.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Lowest total cost for how much I would ride"
+            },
+            {
+              "value": 2,
+              "label": "Flexibility – only pay when I ride"
+            },
+            {
+              "value": 3,
+              "label": "No commitment"
+            },
+            {
+              "value": 4,
+              "label": "Easy to understand"
+            },
+            {
+              "value": 5,
+              "label": "Predictable monthly/semester cost"
+            },
+            {
+              "value": 6,
+              "label": "Best fit for how often I would ride"
+            },
+            {
+              "value": 7,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q28_Other_txt_S",
+                "B": "V_Q28_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "chose_plan_S || chose_plan_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "chose_plan_S",
+            "B": "chose_plan_B"
+          },
+          "exportFields": [
+            "V_Q28_1_S",
+            "V_Q28_2_S",
+            "V_Q28_3_S",
+            "V_Q28_4_S",
+            "V_Q28_5_S",
+            "V_Q28_6_S",
+            "V_Q28_7_S",
+            "V_Q28_Other_txt_S",
+            "V_Q28_1_B",
+            "V_Q28_2_B",
+            "V_Q28_3_B",
+            "V_Q28_4_B",
+            "V_Q28_5_B",
+            "V_Q28_6_B",
+            "V_Q28_7_B",
+            "V_Q28_Other_txt_B"
+          ]
+        },
+        {
+          "id": "Q29",
+          "number": 29,
+          "oldRef": "Q28",
+          "variable": "V_Q29",
+          "text": "Why would you not choose any of the schemes? Select all that apply for each offering shown.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Too expensive overall"
+            },
+            {
+              "value": 2,
+              "label": "I would not ride enough to justify any of them"
+            },
+            {
+              "value": 3,
+              "label": "I would want a different kind of plan (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please describe the kind of plan you would want.",
+              "otherFields": {
+                "S": "V_Q29_DifferentPlan_txt_S",
+                "B": "V_Q29_DifferentPlan_txt_B"
+              }
+            },
+            {
+              "value": 4,
+              "label": "Plans are confusing"
+            },
+            {
+              "value": 5,
+              "label": "I would only use it occasionally and want a free/very cheap option"
+            },
+            {
+              "value": 6,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q29_Other_txt_S",
+                "B": "V_Q29_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "chose_none_S || chose_none_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "chose_none_S",
+            "B": "chose_none_B"
+          },
+          "exportFields": [
+            "V_Q29_1_S",
+            "V_Q29_2_S",
+            "V_Q29_3_S",
+            "V_Q29_4_S",
+            "V_Q29_5_S",
+            "V_Q29_6_S",
+            "V_Q29_DifferentPlan_txt_S",
+            "V_Q29_Other_txt_S",
+            "V_Q29_1_B",
+            "V_Q29_2_B",
+            "V_Q29_3_B",
+            "V_Q29_4_B",
+            "V_Q29_5_B",
+            "V_Q29_6_B",
+            "V_Q29_DifferentPlan_txt_B",
+            "V_Q29_Other_txt_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "beyond",
+      "title": "Section 9 – Beyond Campus and Final Comment",
+      "description": "BNS hopes to later sell these vehicles to the public.",
+      "questions": [
+        {
+          "id": "Q30",
+          "number": 30,
+          "oldRef": "Q29",
+          "variable": "V_Q30",
+          "text": "If eZ2 S or eZ2 B were available to the general public off campus (rent in your city), how likely would you be to use it?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all likely"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Extremely likely"
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q30"
+          ]
+        },
+        {
+          "id": "Q31",
+          "number": 31,
+          "oldRef": "Q30",
+          "variable": "V_Q31",
+          "text": "If you could buy (instead of renting) an eZ2 vehicle of your own for use off campus, how likely would you be to buy one?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all likely"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Extremely likely"
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q31"
+          ]
+        },
+        {
+          "id": "Q32",
+          "number": 32,
+          "oldRef": "Q31",
+          "variable": "V_Q32",
+          "text": "Would you tell friends or family about eZ2 Wheels, share it on social media, or otherwise recommend it?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes, definitely"
+            },
+            {
+              "value": 2,
+              "label": "Maybe"
+            },
+            {
+              "value": 3,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "exportFields": [
+            "V_Q32"
+          ]
+        },
+        {
+          "id": "Q33",
+          "number": 33,
+          "oldRef": "Q32 (Q33 in the original drafting note)",
+          "variable": "V_Q33",
+          "text": "Anything else you would like to tell BNS?",
+          "type": "text",
+          "options": [],
+          "required": false,
+          "condition": "eligible",
+          "maxLength": 100,
+          "help": "Optional.",
+          "exportFields": [
+            "V_Q33"
+          ]
+        }
+      ]
+    }
+  ]
+}

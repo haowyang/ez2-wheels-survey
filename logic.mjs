@@ -12,7 +12,7 @@ export function conditionMet(condition, answers) {
   if (!condition || condition === 'always') return true;
   if (condition === 'eligible') return eligible;
   if (!eligible) return false;
-  if (condition === 'experienced') return Number(answers.Q12) >= 2 && Number(answers.Q12) <= 5;
+  if (condition === 'experienced') return ['number','string'].includes(typeof answers.Q12) && [2,3,4,5].some(value => same(answers.Q12, value));
   if (condition === 'any_interest') return interest('S') || interest('B');
   if (condition === 'charger_interest') return Number(answers.Q22) >= 2 && Number(answers.Q22) <= 5;
   const [_, p] = condition.match(/_([SB])$/) || [];
@@ -57,9 +57,9 @@ export function cleanAnswers(schema, answers) {
 export function validateItem(q,key,answers) {
   const errors=[];
   const value=answers[key];
-  const empty=!hasValue(value) || (Array.isArray(value) && value.length===0);
-  if (empty) return q.required ? [{key,message:'Please answer this question.'}] : [];
   const type=q.type.replace('product_','');
+  const empty=!hasValue(value) || (type==='multi' && Array.isArray(value) && value.length===0);
+  if (empty) return q.required ? [{key,message:'Please answer this question.'}] : [];
   if (type==='single' || type==='multi') {
     const options=(q.options || []).map(o=>String(o.value));
     const selected=type==='multi' ? value : [value];
@@ -105,6 +105,8 @@ export function orderedOptions(q,planOrder) {
 }
 export function normalizedValue(q,value) {
   if (!hasValue(value)) return '';
+  // Keep declared NA codes in raw answers, but exclude them from analysis values.
+  if ((q.missingValues || []).some(code => same(code,value))) return '';
   const type=q.type.replace('product_','');
   if (type==='number' || type==='scale') return Number(value);
   if (type==='text') return String(value).trim();
