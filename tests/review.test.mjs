@@ -29,13 +29,17 @@ function filled(overrides = {}) {
 }
 
 test('uploaded 2.2 source changes are restricted to the approved fields, product introduction and section 7 title', () => {
-  assert.equal(schema.version,'2.3'); assert.equal(source.version,'2.2');
+  assert.equal(schema.version,'2.4'); assert.equal(source.version,'2.2');
   const actual=structuredClone(schema), expected=structuredClone(source);
   assert.equal(actual.sections.length,expected.sections.length);
   actual.version=expected.version;
   actual.productIntro=expected.productIntro;
   const allowed={
     Q2:['maxLength'],
+    Q5:['options'],
+    Q8:['options','help','exclusiveValues','exportFields'],
+    Q12:['text','help','options'],
+    Q14:['options','missingValues'],
     Q23:['text','help','type','variable','exportFields','options','missingValues','measurement','min','max','decimals'],
     Q24:['text','help','type','variable','exportFields','options','missingValues','measurement','min','max','decimals'],
     Q25:['text','help','type','variable','exportFields','options','missingValues','measurement','min','max','decimals'],
@@ -52,7 +56,7 @@ test('uploaded 2.2 source changes are restricted to the approved fields, product
     }
     assert.deepEqual(q,original,`${q.id}: an unapproved question property changed`);
   }
-  assert.deepEqual(changed,['Q2','Q23','Q24','Q25','Q26']);
+  assert.deepEqual(changed,['Q2','Q5','Q8','Q12','Q14','Q23','Q24','Q25','Q26']);
   const section=actual.sections.find(s=>s.id==='expected_use');
   assert.equal(section.title,'Section 7 – Expected Use and Campus Travel Budget');
   section.title=expected.sections.find(s=>s.id==='expected_use').title;
@@ -60,11 +64,11 @@ test('uploaded 2.2 source changes are restricted to the approved fields, product
   assert.equal(qById('Q2').maxLength,120);
 });
 
-test('all 33 questions, codes, conditions and 98 field mappings are unique and internally complete', () => {
+test('all 33 questions, codes, conditions and 99 field mappings are unique and internally complete', () => {
   assert.equal(questions.length,33);
   for(const key of ['id','number','variable']) assert.equal(new Set(questions.map(q=>q[key])).size,33,key);
   const fields=questions.flatMap(q=>q.exportFields);
-  assert.equal(fields.length,98); assert.equal(new Set(fields).size,98);
+  assert.equal(fields.length,99); assert.equal(new Set(fields).size,99);
   const conditions=new Set(['always','eligible','experienced','any_interest','charger_interest',
     ...['S','B'].flatMap(p=>['interested','uninterested','chose_plan','chose_none'].map(c=>`${c}_${p}`))]);
   for(const q of questions) {
@@ -94,7 +98,7 @@ for(const q of questions) test(`${q.id}: valid choices, invalid values, required
     for(const value of [undefined,null,'']) assert.equal(check(value).length>0,q.required,`${key} empty`);
     let validValues=[];
     if(type==='single'||type==='scale') validValues=q.options.map(o=>o.value);
-    if(type==='multi') validValues=[...q.options.map(o=>[o.value]),q.options.map(o=>o.value)];
+    if(type==='multi') validValues=[...q.options.map(o=>[o.value]),q.options.filter(o=>!(q.exclusiveValues||[]).includes(o.value)).map(o=>o.value)];
     if(type==='number') validValues=[q.min??0,q.max??20];
     if(type==='number' && q.decimals>0) validValues.push((q.min??0)+0.5);
     if(type==='text') validValues=['An answer','x'.repeat(q.maxLength)];
@@ -266,12 +270,12 @@ for(const [id,spec] of Object.entries(bandSpecs)) test(`${id}: bands are a compl
   for(const key of ['min','max','decimals'])assert.equal(q[key],undefined,'no obsolete continuous-number validation');
 });
 
-test('six new band export names replace old continuous fields without altering the 98-variable width',()=>{
+test('six new band export names replace old continuous fields alongside the Q8 no-travel field',()=>{
   const oldFields=allQuestions(source).flatMap(q=>q.exportFields);
   const newFields=questions.flatMap(q=>q.exportFields);
   assert.deepEqual(oldFields.filter(f=>!newFields.includes(f)),['V_Q23','V_Q24_S','V_Q24_B','V_Q25_S','V_Q25_B','V_Q26']);
-  assert.deepEqual(newFields.filter(f=>!oldFields.includes(f)),Object.values(bandSpecs).flatMap(s=>s.fields));
-  assert.equal(7+newFields.length*2,203);
+  assert.deepEqual(newFields.filter(f=>!oldFields.includes(f)),['V_Q8_9',...Object.values(bandSpecs).flatMap(s=>s.fields)]);
+  assert.equal(7+newFields.length*2,205);
   const record=makeRecord(schema,filled(),metadata);
   for(const old of ['V_Q23','V_Q24_S','V_Q24_B','V_Q25_S','V_Q25_B','V_Q26'])assert.equal(Object.hasOwn(record.flat,old),false,old);
 });
@@ -332,20 +336,20 @@ test('zero usage, pickup walk or budget does not force pricing skips; Not sure d
   }
 });
 
-test('product descriptions use the same comparison headings and identify pending review facts',()=>{
+test('product descriptions use only comparison headings supported for both offerings',()=>{
   assert.equal(schema.productIntro.length,2);
   const headings=schema.productIntro.map(block=>block.split('\n').slice(1).map(line=>line.split(':')[0]));
-  assert.deepEqual(headings[0],['Pick-up','Return','Riding area','Range','Rental duration','Charging']);
+  assert.deepEqual(headings[0],['Pick-up','Return','Charging']);
   assert.deepEqual(headings[1],headings[0]);
-  for(const block of schema.productIntro)assert.match(block,/to be confirmed/i);
+  for(const block of schema.productIntro)assert.doesNotMatch(block,/to be confirmed|draft|range:|riding area:|rental duration:/i);
 });
 
 test('product comparison renders the shared features and escapes title, label and body text with legacy fallback',()=>{
   const html=productIntroHtml(schema.productIntro);
-  assert.equal((html.match(/role="rowheader"/g)||[]).length,6);
+  assert.equal((html.match(/role="rowheader"/g)||[]).length,3);
   assert.equal((html.match(/role="columnheader"/g)||[]).length,3);
-  assert.equal((html.match(/role="cell"/g)||[]).length,12);
-  for(const feature of ['Pick-up','Return','Riding area','Range','Rental duration','Charging'])assert.ok(html.includes('>'+feature+'</th>'),feature);
+  assert.equal((html.match(/role="cell"/g)||[]).length,6);
+  for(const feature of ['Pick-up','Return','Charging'])assert.ok(html.includes('>'+feature+'</th>'),feature);
   assert.match(html,/nearest available scooter anywhere on campus/);
   assert.match(html,/closest to your destination/);
   const hostile=productIntroHtml([
@@ -368,19 +372,20 @@ const server=vm.createContext({});
 vm.runInContext(gsSource,server);
 const plain=value=>JSON.parse(JSON.stringify(value));
 
-test('released frontend matches the unified collector 2.3 engine and the 215-column Responses contract',()=>{
-  assert.deepEqual(plain(server.engineForVersion_('2.3').schema),schema);
+test('released frontend matches the unified collector 2.4 engine and the 217-column Responses contract',()=>{
+  assert.deepEqual(plain(server.engineForVersion_('2.4').schema),schema);
   const normalize=s=>s.replace(/\r\n/g,'\n').replace(/^export /gm,'')
     .replaceAll('Object.hasOwn(', 'Object.prototype.hasOwnProperty.call(')
     .split('\n').filter(line=>!line.trim().startsWith('// Review draft')).join('\n').trim();
-  const engine23Source=gsSource.split('"2.3":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
-  assert.ok(normalize(engine23Source).endsWith(normalize(frontendLogic)),'the entire shared 2.3 logic must remain identical');
+  const engine24Source=gsSource.split('"2.4":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
+  assert.ok(normalize(engine24Source).endsWith(normalize(frontendLogic)),'the entire shared 2.4 logic must remain identical');
   assert.equal(vm.runInContext('BACKEND_SETTINGS.sheetName',server),'Responses');
   const headers=plain(server.backendHeaders_());
-  assert.equal(headers.length,215);assert.equal(new Set(headers).size,215);
+  assert.equal(headers.length,217);assert.equal(new Set(headers).size,217);
   assert.deepEqual(headers,unionHeaders);
-  assert.deepEqual(headers.slice(7,203),questions.flatMap(q=>q.exportFields).flatMap(f=>[f,f+'__asked']));
-  assert.deepEqual(headers.slice(203),['V_Q23','V_Q24_S','V_Q24_B','V_Q25_S','V_Q25_B','V_Q26'].flatMap(f=>[f,f+'__asked']));
+  assert.deepEqual(headers.slice(7,203),questions.flatMap(q=>q.exportFields).filter(f=>f!=='V_Q8_9').flatMap(f=>[f,f+'__asked']));
+  assert.deepEqual(headers.slice(215),['V_Q8_9','V_Q8_9__asked']);
+  assert.deepEqual(headers.slice(203,215),['V_Q23','V_Q24_S','V_Q24_B','V_Q25_S','V_Q25_B','V_Q26'].flatMap(f=>[f,f+'__asked']));
 });
 
 test('frontend and backend recompute the same raw, normalized and asked data over branch/uncertainty combinations',()=>{
@@ -395,16 +400,17 @@ test('frontend and backend recompute the same raw, normalized and asked data ove
   }
 });
 
-test('old versions cannot import into the 2.3 browser; collector rejects 2.0/2.1 while retaining its separate 2.2 engine',()=>{
+test('old versions cannot import into the 2.4 browser; collector keeps separate 2.2 and 2.3 engines',()=>{
   const current=makeRecord(schema,filled(),metadata);
-  for(const old of ['2.0','2.1','2.2']){
+  for(const old of ['2.0','2.1','2.2','2.3']){
     const previous={...current,schemaVersion:old};
     assert.throws(()=>verifyImportedRecord(schema,previous),/version/i);
     assert.throws(()=>recordsToCsv([current,previous]),/different survey versions/i);
     assert.throws(()=>recordsToCsv([previous,current]),/different survey versions/i);
-    if(old!=='2.2')assert.throws(()=>server.canonicalRecord_(previous),/version/i);
+    if(['2.0','2.1'].includes(old))assert.throws(()=>server.canonicalRecord_(previous),/version/i);
   }
   assert.equal(server.engineForVersion_('2.2').schema.version,'2.2');
+  assert.equal(server.engineForVersion_('2.3').schema.version,'2.3');
   assert.equal(recordsToCsv([]),'');
   assert.doesNotThrow(()=>recordsToCsv([current,{...current,responseId:'33333333-3333-4333-8333-333333333333'}]));
 });

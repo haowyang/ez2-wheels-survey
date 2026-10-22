@@ -1,10 +1,10 @@
 {
   "name": "ez2-student-survey",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/logic.test.mjs tests/backend.test.cjs tests/review.test.mjs",
+    "test": "node --test tests/logic.test.mjs tests/backend.test.cjs tests/review.test.mjs tests/release.test.mjs",
     "start": "node serve.mjs",
     "test:collector": "node --test tests/backend.test.cjs"
   },

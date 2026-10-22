@@ -1,5 +1,5 @@
-import {productIntroHtml} from './product-intro.mjs?v=2.3';
-import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.3';
+import {productIntroHtml} from './product-intro.mjs?v=2.4';
+import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, updateMultiSelection, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.4';
 
 const app=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -74,7 +74,10 @@ function render(scroll=false){
       const kind=input.dataset.kind;
       const handler=()=>{
         const key=input.dataset.key;
-        if(kind==='multi'){const values=state.answers[key]||[];state.answers[key]=input.checked?[...values,Number(input.value)]:values.filter(v=>!same(v,input.value));}
+        if(kind==='multi'){
+          const question=allQuestions(schema).find(q=>q.id===key.split('_')[0]);
+          state.answers[key]=updateMultiSelection(question,state.answers[key],Number(input.value),input.checked);
+        }
         else if(kind==='single'||kind==='scale')state.answers[key]=Number(input.value);
         else state.answers[key]=input.value;
         state.answers=cleanAnswers(schema,state.answers);state.completedAt=null;errors=errors.filter(e=>e.key!==key);save();
@@ -89,7 +92,7 @@ function render(scroll=false){
   if(scroll){window.scrollTo({top:0});app.focus();}
 }
 try{
-  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.3'),fetch('./config.json?v=2.3')]);
+  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.4'),fetch('./config.json?v=2.4')]);
   if(!schemaResult.ok||!configResult.ok)throw new Error('The survey configuration could not be loaded.');
   schema=await schemaResult.json();config=await configResult.json();
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');state=saved?.version===schema.version?saved:freshState();}catch{state=freshState();storageAvailable=false;}

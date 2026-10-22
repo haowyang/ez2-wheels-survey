@@ -65,6 +65,8 @@ export function validateItem(q,key,answers) {
     const selected=type==='multi' ? value : [value];
     if (!Array.isArray(selected) || selected.some(v=>!['number','string'].includes(typeof v)||!options.includes(String(v))) || (type==='multi' && new Set(selected.map(String)).size!==selected.length)) {
       errors.push({key,message:'Please select a valid answer.'});
+    } else if (type==='multi' && selected.length>1 && selected.some(v=>(q.exclusiveValues || []).some(exclusive=>same(v,exclusive)))) {
+      errors.push({key,message:'The no-travel option must be selected on its own.'});
     }
   }
   if (type==='number' || type==='scale') {
@@ -88,6 +90,13 @@ export function validateItem(q,key,answers) {
     else if (hasValue(text) && (typeof text!=='string' || (option.otherMaxLength && text.length>option.otherMaxLength))) errors.push({key:detailKey,message:`Use ${option.otherMaxLength || 100} characters or fewer.`});
   }
   return errors;
+}
+export function updateMultiSelection(q,current,optionValue,checked) {
+  const values=Array.isArray(current)?current:[];
+  if (!checked) return values.filter(v=>!same(v,optionValue));
+  const exclusive=q.exclusiveValues || [];
+  if (exclusive.some(v=>same(v,optionValue))) return [optionValue];
+  return [...values.filter(v=>!same(v,optionValue) && !exclusive.some(x=>same(v,x))),optionValue];
 }
 export function validateAll(schema,answers) {
   const cleaned=cleanAnswers(schema,answers);

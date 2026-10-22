@@ -44,9 +44,9 @@ test('0 remains a real response; hidden values export blank with asked=0',()=>{
   const r=makeRecord(schema,filled({Q16_S:1,Q16_B:2,Q15_B:0,Q24_B:0,Q26:0,Q30:0,Q31:0}),metadata);
   assert.equal(r.flat.V_Q15_S,0);assert.equal(r.flat.V_Q15_S__asked,1);assert.equal(r.flat.V_Q24_band_S,'');assert.equal(r.flat.V_Q24_band_S__asked,0);assert.equal(r.flat.V_Q15_B,0);assert.equal(r.flat.V_Q15_B__asked,1);assert.equal(r.flat.V_Q24_band_B,0);
 });
-test('export contains exactly the 98 declared variables plus 98 asked indicators',()=>{
+test('export contains exactly the 99 declared variables plus 99 asked indicators',()=>{
   const r=makeRecord(schema,filled(),metadata),expected=allQuestions(schema).flatMap(q=>q.exportFields);
-  assert.equal(expected.length,98);assert.deepEqual(Object.keys(r.flat).filter(k=>!k.endsWith('__asked')).sort(),expected.sort());assert.equal(Object.keys(r.flat).length,196);
+  assert.equal(expected.length,99);assert.deepEqual(Object.keys(r.flat).filter(k=>!k.endsWith('__asked')).sort(),expected.sort());assert.equal(Object.keys(r.flat).length,198);
 });
 test('multi choice export is binary for asked choices and blank for hidden choices',()=>{
   const r=makeRecord(schema,filled({Q8:[1,4],Q16_S:1,Q16_B:1}),metadata);assert.equal(r.flat.V_Q8_1,1);assert.equal(r.flat.V_Q8_2,0);assert.equal(r.flat.V_Q28_1_S,'');assert.equal(r.flat.V_Q28_1_S__asked,0);

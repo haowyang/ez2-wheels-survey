@@ -1,49 +1,50 @@
-# Google Sheets collection for the 2.3 release
+# Unified Google Sheets collector for survey 2.4
 
-The website uses the existing deployed unified collector. `UnifiedCollector.gs` is the **only Apps Script source file** in this release. It is byte-for-byte the source deployed as Apps Script version 4 on 2026-10-22; publishing the 2.3 website does not require a new collector deployment.
+`UnifiedCollector.gs` is the only Apps Script source to deploy. It embeds the original 2.2 and 2.3 engines unchanged and adds the finalized 2.4 engine. Do not append old `Schema.gs`, `Logic.gs`, or `Code.gs` files, and do not paste anything from `testing/` into Apps Script. The source SHA-256 for this release is `d849cd5c4e7a5f65b587f5e76f68263d1a42d9fb2a81def87ef4d3bbf92a4811`.
 
-SHA-256: `30a0e13823afdee8c51fa1b87820f524b945318578778e2e959d0ec4baa7f716`.
+## One response table, append-only columns
 
-The former separate `Schema.gs`, `Logic.gs`, and `Code.gs` files are deliberately absent. Their declarations would collide with the two embedded engines in the unified source. Historical comments inside the frozen engines retain their original wording; they do not describe the current deployment status.
+Accepted versions 2.2, 2.3, and 2.4 all write to the existing private `Responses` tab. Versions 2.0 and 2.1 are rejected. The companion `Codebook` explains all fields and their version-specific meanings; submissions do not modify the Codebook.
 
-## Storage and interpretation
+The exact 217-column order is in `headers.json`. The previous 215 columns retain their original positions. Only `V_Q8_9` and `V_Q8_9__asked` are appended, at columns 216 and 217. The 2.4 source schema has 99 analysis fields plus 99 indicators and seven collector metadata fields; the unified layout additionally retains the six legacy continuous-value fields and their indicators.
 
-- All accepted submissions go to the single `Responses` tab. Its exact **215 headers** are in `headers.json`: seven metadata columns, the 2.3 survey's 98 analysis fields and 98 `__asked` indicators, then six legacy continuous-value fields and their six indicators.
-- The companion `Codebook` tab explains the unified fields and version-specific meanings. It is documentation; submissions never modify it.
-- `schemaVersion: "2.2"` uses the original 2.2 engine and `schemaVersion: "2.3"` uses the original 2.3 engine. The source `survey_version`, original answer meanings, and digest algorithm are preserved. Versions 2.0 and 2.1 are rejected.
-- The six 2.3 category fields are `V_Q23_band`, `V_Q24_band_S`, `V_Q24_band_B`, `V_Q25_band_S`, `V_Q25_band_B`, and `V_Q26_band`. The corresponding un-suffixed legacy fields retain the continuous values supplied by 2.2; they must not be recoded as band numbers.
-- A field absent from a response's schema is blank with `__asked=0`. A conditionally hidden field is also blank with `__asked=0`; distinguish these cases using `survey_version` and the Codebook. A visible answer whose schema marks code `99` as missing is blank with `__asked=1`. A substantive zero remains zero.
-- A repeated ID with the same canonical digest returns the original receipt without adding a row. Reusing an ID with different canonical answers fails. The collector validates and cleans answers itself and ignores client-supplied analysis fields.
+- Historical 2.2/2.3 responses receive a blank new Q8 value and `__asked=0`; no prior answer is inferred.
+- In an eligible 2.4 response, `V_Q8_9=1` means the exclusive None option was selected. It is 0 when another Q8 option was selected, with `__asked=1` in both cases. A request combining None with any other option is rejected.
+- Q14 code 99 is available only in 2.4. It remains in canonical raw answers but exports a blank analysis value and `V_Q14__asked=1`. A hidden Q14 instead has `__asked=0`.
+- The six legacy continuous fields remain separate from the six category fields ending in `_band` (with product suffixes where relevant). Old numeric values are not reinterpreted as categories. A meaningful zero remains zero; declared missing code 99 exports blank while retaining `__asked=1`.
+- Q5 and Q12 wording changed in 2.4 while retaining their field names. Interpret these fields using `survey_version` and the matching Codebook definitions.
+- Existing IDs, receive times, source versions, answer key order, and digest semantics remain unchanged. Repeated ID plus identical canonical digest returns the original receipt; conflicting reuse fails without replacing the earlier response.
 
-The frontend's backup CSV remains specific to version 2.3 and has 201 columns (five local metadata columns plus 196 analysis/indicator columns). It is not the unified Sheet layout. Do not import mixed-version records through the 2.3 browser backup tool.
+The 2.4 browser's backup CSV has 203 columns (five local metadata plus 198 analysis/indicator columns). It is intentionally different from the 217-column Sheet. The 2.4 browser importer accepts only 2.4 records, although the collector supports all three current source versions.
 
-## Existing deployment
+## Deploy before upgrading the existing headers
 
-Keep the website's configured `/exec` URL and the existing `SPREADSHEET_ID` and `RETURN_URL` Script Properties. The project runs under the deploying owner's account and accepts anonymous submissions. The response sheet remains private; the collector exposes a receipt only and does not offer a response-reading endpoint.
+1. Keep a private backup of the existing response table and Apps Script source. Preserve `SPREADSHEET_ID`, `RETURN_URL`, and the existing deployment URLs.
+2. Replace the Apps Script project source with this single `UnifiedCollector.gs`, using the accompanying `appsscript.json` manifest. Update **all active deployment URLs** in the same project to the same new script version before upgrading the table.
+3. Before the upgrade, valid 2.2 and 2.3 requests continue writing the exact old 215-column layout to `Responses`. A 2.4 request receives an explicit not-ready failure. No fallback table is created or used.
+4. Run `upgradeUnifiedHeaders()` manually. It takes the same ScriptLock as submissions. It verifies the exact old 215-column prefix, initializes only the two new cells of historical responses to blank/0, and reads them back. It also checks every old cell against its snapshot. It writes the two new headers only after those checks succeed. Blank row gaps remain blank. If the physical grid needs more columns, it adds only the missing columns at the end.
+5. Run `setupSurveySheet()`. It only verifies the completed 217 headers; it never creates a table or changes cells.
+6. Independently verify that every old cell, response ID, timestamp, version, and hash is unchanged, that historical new fields are blank/0, and that new synthetic 2.4 submissions and duplicate receipts behave correctly. Clear only specifically identified QA rows after verification.
 
-If maintaining the Apps Script project, paste only `UnifiedCollector.gs` into one source file, replacing the prior source rather than appending it. Use `appsscript.json` as the project manifest. Never paste files from `testing/`. If backend code is intentionally changed in a later release, update every active deployment in the same project to the same tested script version so that they share the same validation, destination, and lock behavior.
+This release has no `consolidateResponses()` function and no table creation, renaming, or deletion code. It does not migrate responses to another table.
 
-`setupSurveySheet()` only verifies the existing 215-column `Responses` header. It does not create a tab, rewrite headers, expand a grid, or modify response rows. Missing or mismatched headers stop collection instead of overwriting data.
+## Failure and retry behavior
 
-## Historical migration helper
+The header upgrade never writes to columns 1–215. If expansion, initialization, readback, or header writing fails, earlier response values remain intact. An exact old prefix with empty or partially written expected new headers remains recoverable; 2.2/2.3 can continue submitting while 2.4 remains blocked until the complete new header is present. A retry includes any old-version rows received in that interval.
 
-Consolidation was completed before this website release. Do not run migration simply to publish the website.
+Unexpected new-column data is not overwritten. Changes to old cells or row counts during upgrade stop the final header commit. When the 217 headers are complete, rerunning the upgrade validates historical initialization and returns without rewriting responses, including any newer 2.4 rows. A failure after the header commit can therefore be retried safely. All request and upgrade paths share the same script lock.
 
-The retained `consolidateResponses()` helper uses the same ScriptLock as submission. It can map a strictly validated 2.2 source into staging, verify every cell, and promote the staging tab while preserving source tables. It requires the old 2.0/2.1 response tabs to contain no answers. Before a unified table exists, the compatibility path accepts only 2.2 into a strictly validated `Responses_v2_2`; 2.3 receives a not-ready error. Once `Responses` has the exact 215-column header, all accepted versions write there.
+Do not put real answers, private exports, or backups in this repository. A deployed collector returns only the submitter's receipt; it has no endpoint for reading saved answers. Data writes are literal and retain spreadsheet/CSV formula safeguards.
 
-The helper never deletes a table. A repeat run with a valid unified table verifies that source rows are already present exactly; it does not replace the unified table or discard later responses. Any future migration or cleanup requires a private backup and a separate, precise verification of existing answers. Do not put response exports or private backup files in this repository.
+## Offline verification
 
-## Offline tests and fixtures
-
-From the website directory, run:
+From the website directory:
 
 ```sh
 npm test
 npm run test:collector
 ```
 
-`tests/backend.test.cjs` loads the actual release `UnifiedCollector.gs`. It checks its frozen hash, both independent version engines, 144 canonical/digest route combinations, 215-column projection, legacy-value preservation, missing versus zero, version-specific limits, hidden-answer cleanup, duplicate IDs, lock contention, literal/formula-safe writes, error receipts, and migration failure/retry cases. It uses mock services and makes no network requests.
+`tests/backend.test.cjs` loads the actual release collector and runs 28 offline integration tests. Coverage includes the full frozen 2.2/2.3 engine source, 216 version/routing combinations, Q8 exclusivity, Q14 missingness, all prior field meanings, duplicate digests, 215-column compatibility, 217-column setup, header upgrade failures/retries, 501 historical rows over several write batches, blank gaps, manual-edit detection, and lock contention. The mock asserts that header upgrade writes touch only columns 216–217. No test sends live requests.
 
-`tests/review.test.mjs` retains the approved question/option/routing tests and verifies that `survey.json` and the full frontend logic match the embedded 2.3 engine. It also verifies the 215-column storage contract and the distinction between browser backup compatibility and collector version compatibility.
-
-`testing/fixtures/original-2.2.gs.txt` and `original-2.3.gs.txt` are frozen historical test oracles, not deployable source files. Their `.txt` extension is intentional. `testing/qa/packet-*.json` contain synthetic answers for the tests only. None of these files contain real responses, credentials, or live receipts.
+The other tests verify all 33 questions and the actual frontend against the embedded 2.4 engine. `testing/fixtures/*.gs.txt` are historical test oracles, not deployment files. `testing/fixtures/previous-unified-headers.json` preserves the prior exact column order. `testing/qa/packet-*.json` contain synthetic test answers only, not real responses or live receipts.

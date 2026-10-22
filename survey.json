@@ -1,5 +1,5 @@
 {
-  "version": "2.3",
+  "version": "2.4",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -7,8 +7,8 @@
     "BNS plans to offer shared electric vehicles on university campuses under the name eZ2 Wheels: eZ2 S (electric scooters) and eZ2 B (electric bikes). You use the BNS app to unlock a vehicle, ride it, and leave it at the end of your trip; you do not buy the vehicle."
   ],
   "productIntro": [
-    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nReturn: The app shows where to leave it closest to your destination.\nRiding area: Campus use. The current draft says it locks outside the campus boundary; how this works needs confirmation.\nRange: To be confirmed. The current draft says “3–5 miles”; its meaning needs clarification.\nRental duration: To be confirmed.\nCharging: Stations are located around campus.",
-    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand on campus.\nReturn: Return it to any designated bike stand on campus.\nRiding area: Whether riding outside campus is allowed is to be confirmed.\nRange: To be confirmed.\nRental duration: As currently described, ride for as long as you like, including for the day.\nCharging: Stations are available."
+    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nReturn: The app shows where to leave it closest to your destination.\nCharging: Stations are located around campus.",
+    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand on campus.\nReturn: Return it to any designated bike stand on campus.\nCharging: Stations are available."
   ],
   "pricingIntro": "The prices below are hypothetical scenarios for this survey. The same three pricing scenarios apply separately to eZ2 S (electric scooters) and eZ2 B (electric bikes). Please consider the plans for each offering you are interested in.",
   "plans": [
@@ -169,7 +169,7 @@
             },
             {
               "value": 3,
-              "label": "Off campus, need to commute to campus"
+              "label": "Off campus, beyond walking distance of campus"
             }
           ],
           "required": true,
@@ -281,6 +281,10 @@
               "otherMaxLength": 40,
               "otherPrompt": "Please specify.",
               "otherField": "V_Q8_Other_txt"
+            },
+            {
+              "value": 9,
+              "label": "I do not currently travel between locations on campus"
             }
           ],
           "required": true,
@@ -294,8 +298,13 @@
             "V_Q8_6",
             "V_Q8_7",
             "V_Q8_8",
+            "V_Q8_9",
             "V_Q8_Other_txt"
-          ]
+          ],
+          "exclusiveValues": [
+            9
+          ],
+          "help": "Select all that apply. Choose “I do not currently travel between locations on campus” on its own, without any other option."
         },
         {
           "id": "Q9",
@@ -409,7 +418,7 @@
           "number": 12,
           "oldRef": "Q10 (shared-vehicle-use frequency)",
           "variable": "V_Q12",
-          "text": "How often, if ever, do you use a shared e-scooter or e-bike?",
+          "text": "Which best describes your use of shared e-scooters or e-bikes?",
           "type": "single",
           "options": [
             {
@@ -418,26 +427,27 @@
             },
             {
               "value": 2,
-              "label": "I have tried it once or twice, but don't use it regularly"
+              "label": "Only 1 or 2 shared rides in my lifetime"
             },
             {
               "value": 3,
-              "label": "Less than once a month"
+              "label": "More than 2 shared rides in my lifetime; less than 1 ride per month on average in the past 3 months"
             },
             {
               "value": 4,
-              "label": "1–3 times a month"
+              "label": "More than 2 shared rides in my lifetime; 1 to less than 4 rides per month on average in the past 3 months"
             },
             {
               "value": 5,
-              "label": "Once a week or more"
+              "label": "More than 2 shared rides in my lifetime; 4 or more rides per month on average in the past 3 months"
             }
           ],
           "required": true,
           "condition": "eligible",
           "exportFields": [
             "V_Q12"
-          ]
+          ],
+          "help": "Count rides for any purpose, using either type of shared vehicle. First consider your lifetime total: if you have taken only 1 or 2 rides, choose that option regardless of when they occurred. If you have taken more than 2 rides, use your average over the past 3 months (rides in those 3 months divided by 3). Zero rides in the past 3 months counts as less than 1 per month."
         },
         {
           "id": "Q13",
@@ -506,12 +516,19 @@
             {
               "value": 5,
               "label": "Extremely reliable"
+            },
+            {
+              "value": 99,
+              "label": "Not enough experience to judge"
             }
           ],
           "required": true,
           "condition": "experienced",
           "exportFields": [
             "V_Q14"
+          ],
+          "missingValues": [
+            99
           ]
         }
       ]
