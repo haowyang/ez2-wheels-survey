@@ -156,6 +156,7 @@ export function csvCell(value) {
 }
 export function recordsToCsv(records) {
   if (!records.length) return '';
+  if (new Set(records.map(record=>record.schemaVersion)).size!==1) throw new Error('Do not combine different survey versions in one CSV export.');
   const fields=[...new Set(records.flatMap(record=>Object.keys(record.flat)))];
   const meta=['response_id','schema_version','started_at','completed_at','plan_order'];
   const lines=[[...meta,...fields].map(csvCell).join(',')];

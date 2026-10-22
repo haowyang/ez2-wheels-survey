@@ -1,5 +1,5 @@
-import {productIntroHtml} from './product-intro.mjs?v=2.2';
-import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.2';
+import {productIntroHtml} from './product-intro.mjs?v=2.3';
+import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.3';
 
 const app=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -85,15 +85,16 @@ function render(scroll=false){
       input.addEventListener(['text','number'].includes(kind)?'input':'change',handler);
     });
   }
+  if(config.reviewNotice)app.insertAdjacentHTML('afterbegin',`<div class="notice warning review-notice" role="note">${esc(config.reviewNotice)}</div>`);
   if(scroll){window.scrollTo({top:0});app.focus();}
 }
 try{
-  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.2'),fetch('./config.json?v=2.2')]);
+  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.3'),fetch('./config.json?v=2.3')]);
   if(!schemaResult.ok||!configResult.ok)throw new Error('The survey configuration could not be loaded.');
   schema=await schemaResult.json();config=await configResult.json();
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');state=saved?.version===schema.version?saved:freshState();}catch{state=freshState();storageAvailable=false;}
   if(!Array.isArray(state.planOrder)||state.planOrder.map(Number).sort().join(',')!=='1,2,3')state.planOrder=shuffledPlans();
   state.answers=cleanAnswers(schema,state.answers||{});save();
-  document.querySelector('.site-footer').textContent=validEndpoint()?'Student research · Responses are submitted only when you choose to submit.':'Student research · Preview mode · No online response collection is configured.';
+  document.querySelector('.site-footer').textContent=validEndpoint()?`Student research · Survey ${schema.version} · Responses are submitted only when you choose to submit.`:'Student research · Preview mode · No online response collection is configured.';
   render();
 }catch(error){app.innerHTML=`<div class="notice error"><strong>The survey could not load.</strong><p>${esc(error.message)}</p><p>Open the site through GitHub Pages or a local web server, rather than opening the HTML file directly.</p></div>`;}

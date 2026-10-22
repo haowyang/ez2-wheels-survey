@@ -1,5 +1,5 @@
 {
-  "version": "2.2",
+  "version": "2.3",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -7,8 +7,8 @@
     "BNS plans to offer shared electric vehicles on university campuses under the name eZ2 Wheels: eZ2 S (electric scooters) and eZ2 B (electric bikes). You use the BNS app to unlock a vehicle, ride it, and leave it at the end of your trip; you do not buy the vehicle."
   ],
   "productIntro": [
-    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nDrop-off: The app shows where to leave it closest to your destination.\nRange: Typically 3–5 miles.\nCampus boundary: It locks automatically if you ride outside the campus boundary.\nCharging: Stations are located around campus.",
-    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand.\nRide time: Ride for as long as you like, including for the day.\nReturn: Return it to any designated bike stand on campus.\nCharging: Stations are available."
+    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nReturn: The app shows where to leave it closest to your destination.\nRiding area: Campus use. The current draft says it locks outside the campus boundary; how this works needs confirmation.\nRange: To be confirmed. The current draft says “3–5 miles”; its meaning needs clarification.\nRental duration: To be confirmed.\nCharging: Stations are located around campus.",
+    "eZ2 B — Electric bikes\nPick-up: Take an e-bike from a designated bike stand on campus.\nReturn: Return it to any designated bike stand on campus.\nRiding area: Whether riding outside campus is allowed is to be confirmed.\nRange: To be confirmed.\nRental duration: As currently described, ride for as long as you like, including for the day.\nCharging: Stations are available."
   ],
   "pricingIntro": "The prices below are hypothetical scenarios for this survey. The same three pricing scenarios apply separately to eZ2 S (electric scooters) and eZ2 B (electric bikes). Please consider the plans for each offering you are interested in.",
   "plans": [
@@ -66,7 +66,7 @@
           "options": [],
           "required": true,
           "condition": "eligible",
-          "maxLength": 40,
+          "maxLength": 120,
           "exportFields": [
             "V_Q2"
           ]
@@ -1006,33 +1006,179 @@
           "id": "Q23",
           "number": 23,
           "oldRef": "Q22",
-          "variable": "V_Q23",
-          "text": "What is the minimum compensation per vehicle charged that would make you consider participating in this activity?",
-          "type": "number",
-          "options": [],
+          "variable": "V_Q23_band",
+          "text": "What is the minimum payment per vehicle charged that would make you consider taking part in the charger program?",
+          "type": "single",
+          "options": [
+            {
+              "value": 0,
+              "label": "$0 — I would consider doing it without payment",
+              "interval": {
+                "lower": 0,
+                "upper": 0,
+                "lowerInclusive": true,
+                "upperInclusive": true
+              }
+            },
+            {
+              "value": 1,
+              "label": "More than $0 but less than $2",
+              "interval": {
+                "lower": 0,
+                "upper": 2,
+                "lowerInclusive": false,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "$2 to less than $5",
+              "interval": {
+                "lower": 2,
+                "upper": 5,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "$5 to less than $10",
+              "interval": {
+                "lower": 5,
+                "upper": 10,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "$10 to less than $15",
+              "interval": {
+                "lower": 10,
+                "upper": 15,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "$15 or more",
+              "interval": {
+                "lower": 15,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 99,
+              "label": "Not sure yet"
+            }
+          ],
           "required": true,
           "condition": "charger_interest",
-          "min": 0,
-          "decimals": 2,
-          "help": "Enter a dollar amount per vehicle charged.",
+          "help": "Choose the range containing the smallest payment you would accept for one vehicle. Choose Not sure yet if you need more information about the work involved.",
           "exportFields": [
-            "V_Q23"
-          ]
+            "V_Q23_band"
+          ],
+          "missingValues": [
+            99
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "USD_per_vehicle_charged",
+            "coding": "Values are category codes, not measured quantities. 99 is unknown and is exported as missing; 0 is a substantive zero. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
         }
       ]
     },
     {
       "id": "expected_use",
-      "title": "Section 7 – Expected Use",
+      "title": "Section 7 – Expected Use and Campus Travel Budget",
       "questions": [
         {
           "id": "Q24",
           "number": 24,
           "oldRef": "Q23",
-          "variable": "V_Q24",
-          "text": "About how many total hours would you expect to use each offering in a typical week?",
-          "type": "product_number",
-          "options": [],
+          "variable": "V_Q24_band",
+          "text": "In a typical week during the semester, about how much time would you spend actually riding each offering on campus?",
+          "type": "product_single",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 — I would not ride it in a typical week",
+              "interval": {
+                "lower": 0,
+                "upper": 0,
+                "lowerInclusive": true,
+                "upperInclusive": true
+              }
+            },
+            {
+              "value": 1,
+              "label": "More than 0 but less than 30 minutes",
+              "interval": {
+                "lower": 0,
+                "upper": 0.5,
+                "lowerInclusive": false,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "30 minutes to less than 1 hour",
+              "interval": {
+                "lower": 0.5,
+                "upper": 1,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "1 to less than 2 hours",
+              "interval": {
+                "lower": 1,
+                "upper": 2,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "2 to less than 3 hours",
+              "interval": {
+                "lower": 2,
+                "upper": 3,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "3 to less than 5 hours",
+              "interval": {
+                "lower": 3,
+                "upper": 5,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 6,
+              "label": "5 hours or more",
+              "interval": {
+                "lower": 5,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 99,
+              "label": "Not sure yet"
+            }
+          ],
           "required": true,
           "condition": "any_interest",
           "products": [
@@ -1043,23 +1189,93 @@
             "S": "interested_S",
             "B": "interested_B"
           },
-          "min": 0,
-          "decimals": 2,
-          "help": "Enter hours per week (for example, 0.5 for 30 minutes). Enter 0 if you would not use it.",
+          "help": "Choose one range for each offering shown. Count riding time only, not time parked or kept between trips. Choose 0 if you would not ride it in a typical week, or Not sure yet if you cannot estimate.",
           "exportFields": [
-            "V_Q24_S",
-            "V_Q24_B"
+            "V_Q24_band_S",
+            "V_Q24_band_B"
           ],
-          "max": 168
+          "missingValues": [
+            99
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "hours_per_week",
+            "coding": "Values are category codes, not measured quantities. 99 is unknown and is exported as missing; 0 is a substantive zero. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
         },
         {
           "id": "Q25",
           "number": 25,
           "oldRef": "Q24",
-          "variable": "V_Q25",
-          "text": "What is the maximum amount of time (in minutes) you would be willing to walk to access an available electric bike or electric scooter on campus?",
-          "type": "product_number",
-          "options": [],
+          "variable": "V_Q25_band",
+          "text": "What is the longest you would be willing to walk to pick up an available vehicle on campus?",
+          "type": "product_single",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 minutes — only if a vehicle is already where I am",
+              "interval": {
+                "lower": 0,
+                "upper": 0,
+                "lowerInclusive": true,
+                "upperInclusive": true
+              }
+            },
+            {
+              "value": 1,
+              "label": "More than 0 but less than 5 minutes",
+              "interval": {
+                "lower": 0,
+                "upper": 5,
+                "lowerInclusive": false,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "5 to less than 10 minutes",
+              "interval": {
+                "lower": 5,
+                "upper": 10,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "10 to less than 15 minutes",
+              "interval": {
+                "lower": 10,
+                "upper": 15,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "15 to less than 20 minutes",
+              "interval": {
+                "lower": 15,
+                "upper": 20,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "20 minutes or more",
+              "interval": {
+                "lower": 20,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 99,
+              "label": "Not sure yet"
+            }
+          ],
           "required": true,
           "condition": "any_interest",
           "products": [
@@ -1070,30 +1286,117 @@
             "S": "interested_S",
             "B": "interested_B"
           },
-          "min": 0,
-          "decimals": 0,
-          "help": "Enter minutes separately for each offering shown.",
+          "help": "Choose one range for each offering shown. Think about one pickup, not your total walking time for the day.",
           "exportFields": [
-            "V_Q25_S",
-            "V_Q25_B"
-          ]
+            "V_Q25_band_S",
+            "V_Q25_band_B"
+          ],
+          "missingValues": [
+            99
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "minutes_per_pickup",
+            "coding": "Values are category codes, not measured quantities. 99 is unknown and is exported as missing; 0 is a substantive zero. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
         },
         {
           "id": "Q26",
           "number": 26,
           "oldRef": "Q25",
-          "variable": "V_Q26",
-          "text": "What is the maximum amount per month you would be willing to spend on getting between locations on campus (not including travel to and from campus)?",
-          "type": "number",
-          "options": [],
+          "variable": "V_Q26_band",
+          "text": "What is the most you would be willing to spend in total per month on travel between places on campus, across all transportation options?",
+          "type": "single",
+          "options": [
+            {
+              "value": 0,
+              "label": "$0 — I would not be willing to spend money on this",
+              "interval": {
+                "lower": 0,
+                "upper": 0,
+                "lowerInclusive": true,
+                "upperInclusive": true
+              }
+            },
+            {
+              "value": 1,
+              "label": "More than $0 but less than $10",
+              "interval": {
+                "lower": 0,
+                "upper": 10,
+                "lowerInclusive": false,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "$10 to less than $20",
+              "interval": {
+                "lower": 10,
+                "upper": 20,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "$20 to less than $40",
+              "interval": {
+                "lower": 20,
+                "upper": 40,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "$40 to less than $60",
+              "interval": {
+                "lower": 40,
+                "upper": 60,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "$60 to less than $100",
+              "interval": {
+                "lower": 60,
+                "upper": 100,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 6,
+              "label": "$100 or more",
+              "interval": {
+                "lower": 100,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 99,
+              "label": "Not sure yet"
+            }
+          ],
           "required": true,
-          "condition": "any_interest",
-          "min": 0,
-          "decimals": 2,
-          "help": "Enter a dollar amount per month.",
+          "condition": "eligible",
+          "help": "Include all ways of getting around on campus, not just eZ2 Wheels. Do not include travel to and from campus. Choose the range containing your maximum monthly amount.",
           "exportFields": [
-            "V_Q26"
-          ]
+            "V_Q26_band"
+          ],
+          "missingValues": [
+            99
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "USD_per_month",
+            "coding": "Values are category codes, not measured quantities. 99 is unknown and is exported as missing; 0 is a substantive zero. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
         }
       ]
     },

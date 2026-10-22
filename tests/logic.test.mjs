@@ -21,7 +21,7 @@ test('all 576 combinations of interests, experience, charging and plans validate
   let count=0;
   for(const S of [1,2,5])for(const B of [1,2,5])for(const exp of [1,2])for(const charge of [1,2])for(const sPlan of [1,2,3,4])for(const bPlan of [1,2,3,4]){
     const answers=filled({Q16_S:S,Q16_B:B,Q12:exp,Q22:charge,Q27_S:sPlan,Q27_B:bPlan});assert.deepEqual(validateAll(schema,answers),[]);const r=makeRecord(schema,answers,metadata);
-    assert.equal(r.asked.Q24_S,S>=2);assert.equal(r.asked.Q24_B,B>=2);assert.equal(r.asked.Q30,S>=2||B>=2);assert.equal(r.asked.Q23,charge>=2);assert.equal(r.asked.Q13,exp>=2);assert.equal(r.asked.Q28_S,S>=2&&sPlan<=3);assert.equal(r.asked.Q29_B,B>=2&&bPlan===4);count++;
+    assert.equal(r.asked.Q26,true);assert.equal(r.asked.Q24_S,S>=2);assert.equal(r.asked.Q24_B,B>=2);assert.equal(r.asked.Q30,S>=2||B>=2);assert.equal(r.asked.Q23,charge>=2);assert.equal(r.asked.Q13,exp>=2);assert.equal(r.asked.Q28_S,S>=2&&sPlan<=3);assert.equal(r.asked.Q29_B,B>=2&&bPlan===4);count++;
   }
   assert.equal(count,576);
 });
@@ -29,7 +29,7 @@ test('ineligible response clears everything after the screener',()=>{assert.deep
 test('returning to change interest clears descendants and retains all-respondent attitudes',()=>{
   const old=filled({Q27_S:1,Q27_B:4}),next=cleanAnswers(schema,{...old,Q16_S:1,Q16_B:1});
   for(const key of ['Q24_S','Q27_S','Q28_S','Q29_B','Q30','Q31','Q32'])assert.equal(Object.hasOwn(next,key),false,key);
-  for(const key of ['Q15_S','Q15_B','Q18','Q19_S','Q19_B','Q20_S','Q21_B','Q22','Q33'])assert.ok(Object.hasOwn(next,key),key);
+  for(const key of ['Q26','Q15_S','Q15_B','Q18','Q19_S','Q19_B','Q20_S','Q21_B','Q22','Q33'])assert.ok(Object.hasOwn(next,key),key);
 });
 test('switching None to a plan clears rejection reasons and their text',()=>{
   const old=filled({Q27_S:4,Q29_S:[3,6],Q29_S__3_text:'A weekly plan',Q29_S__6_text:'Other reason'});
@@ -42,7 +42,7 @@ test('deselecting Other clears hidden free text and only selected Other is requi
 });
 test('0 remains a real response; hidden values export blank with asked=0',()=>{
   const r=makeRecord(schema,filled({Q16_S:1,Q16_B:2,Q15_B:0,Q24_B:0,Q26:0,Q30:0,Q31:0}),metadata);
-  assert.equal(r.flat.V_Q15_S,0);assert.equal(r.flat.V_Q15_S__asked,1);assert.equal(r.flat.V_Q24_S,'');assert.equal(r.flat.V_Q24_S__asked,0);assert.equal(r.flat.V_Q15_B,0);assert.equal(r.flat.V_Q15_B__asked,1);assert.equal(r.flat.V_Q24_B,0);
+  assert.equal(r.flat.V_Q15_S,0);assert.equal(r.flat.V_Q15_S__asked,1);assert.equal(r.flat.V_Q24_band_S,'');assert.equal(r.flat.V_Q24_band_S__asked,0);assert.equal(r.flat.V_Q15_B,0);assert.equal(r.flat.V_Q15_B__asked,1);assert.equal(r.flat.V_Q24_band_B,0);
 });
 test('export contains exactly the 98 declared variables plus 98 asked indicators',()=>{
   const r=makeRecord(schema,filled(),metadata),expected=allQuestions(schema).flatMap(q=>q.exportFields);
@@ -87,11 +87,11 @@ test('new categorical questions accept only declared codes',()=>{
   }
 });
 
-test('weekly use consistently accepts fractional hours and caps at 168',()=>{
+test('weekly use accepts category codes and uncertainty, rejecting former continuous-hour values',()=>{
   const q=allQuestions(schema).find(q=>q.id==='Q24');
-  assert.match(q.text,/hours/);assert.match(q.help,/hours per week/);
-  for(const value of [0,.5,1.25,168])assert.deepEqual(validateItem(q,'Q24_S',{Q24_S:value}),[]);
-  for(const value of [-1,168.01,169,.123])assert.ok(validateItem(q,'Q24_S',{Q24_S:value}).length);
-  const r=makeRecord(schema,filled({Q16_S:5,Q24_S:.5}),metadata);
-  assert.equal(r.flat.V_Q24_S,.5);
+  assert.equal(q.type,'product_single');assert.equal(q.measurement.unit,'hours_per_week');
+  for(const value of [0,1,2,3,4,5,6,99])assert.deepEqual(validateItem(q,'Q24_S',{Q24_S:value}),[]);
+  for(const value of [-1,.5,1.25,168,169,.123,7])assert.ok(validateItem(q,'Q24_S',{Q24_S:value}).length);
+  const r=makeRecord(schema,filled({Q16_S:5,Q24_S:2}),metadata);
+  assert.equal(r.flat.V_Q24_band_S,2);
 });

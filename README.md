@@ -1,23 +1,35 @@
-# eZ2 Wheels Survey 2.2 — Pierre revision
+# eZ2 Wheels Student Survey — 2.3
 
-The questionnaire wording and choices are taken from Pierre's survey (2).json. The user expressly chose to retain Q6's exact six choices (codes 1–5 and 99); no greater-than-5-miles option has been added.
+Public questionnaire: https://haowyang.github.io/ez2-wheels-survey/
 
-## Data and routing
+This release publishes the team's revised 33-question survey. `config.json` connects the site to the existing unified Google Apps Script collector. A response is submitted only after its Google confirmation page says it was saved.
 
-- Q6: raw JSON answers retain 99 = NA. The analysis value V_Q6 is blank in Google Sheets and CSV, while V_Q6__asked remains 1. A blank with asked=1 here is an explicit NA answer, not an unanswered required question. Codes 1–5 denote distance categories, not measured miles. Do not average these codes as distance.
-- Q12: Never = 1 skips Q13–Q14; each valid answer 2, 3, 4, or 5 requires them. Missing or invalid values do not trigger experience questions. Changing back to Never clears previous Q13–Q14 answers and their Other text.
-- Q4's age category meanings changed. Q6 now concerns on-campus residents; Q12 is no longer limited to commuting; Q26 now asks willingness to spend between locations on campus. Keep versions separate for analysis.
-- Q15 liking and Q16 interest remain separate. Q16 governs interest routes. Q24 remains hours per week (0–168, up to two decimals).
-- Q6 continues to be shown to everyone eligible, as Pierre specified. Off-campus residents select NA themselves. No new Q5-based routing or consistency restriction was added.
+## Changes
 
-## Deployment and preservation
+- The two offerings use matching headings: Pick-up, Return, Riding area, Range, Rental duration, and Charging. Known differences are preserved; unconfirmed product details are explicitly marked rather than invented.
+- Q24 uses weekly actual riding-time bands, excluding time parked or merely keeping a vehicle.
+- Q25 uses walking-time bands for one vehicle pick-up.
+- Q26 uses monthly campus-travel budget bands and is shown to all eligible respondents.
+- Q23 uses charging-payment bands with zero and Not sure options; Q2 permits university names up to 120 characters.
+- Q6's existing choices and NA code 99 are unchanged. Q12 codes 2–5 count as previous experience; Never (1) skips Q13–Q14. Q15 liking precedes Q16 interest, and Q16 controls interest routing.
 
-Use a separate v2.2 Apps Script deployment and Responses_v2_2 tab. Keep existing v2.0/v2.1 deployments and tables intact so already-open older questionnaires can still submit. The website's config.json must point only to the new v2.2 /exec URL. The spreadsheet ID and account credentials never belong in the public repository.
+## Collection and export
 
-Version 2.2 uses versioned asset URLs. Refreshed pages use the new version and do not reinterpret a v2.1 draft under changed category meanings. Google Sheets Codebook_v2_2 documents all 98 questionnaire fields. Each value has a companion __asked flag, giving 203 total stored columns with metadata.
+There is one private **Responses** table and one **Codebook**. The unified collector accepts 2.2 and 2.3 packets, preserves the original `survey_version`, and stores 215 columns: seven metadata columns, 98 current answer fields with their 98 asked flags, plus six legacy numeric fields with their six asked flags. Historical numeric answers remain unchanged; they are never relabeled as band codes.
 
-## Running and verifying
+The six new band fields are `V_Q23_band`, `V_Q24_band_S`, `V_Q24_band_B`, `V_Q25_band_S`, `V_Q25_band_B`, and `V_Q26_band`. Their values are category codes, not measured dollars, hours, or minutes. Zero is substantive; 99 is explicit uncertainty (Q6: NA), exported as blank with asked=1. Skipped or version-inapplicable fields are blank with asked=0.
 
-Use Node.js 18+; no packages are required. Run `node --test tests/logic.test.mjs tests/backend.test.cjs tests/pierre.test.mjs`, then `node serve.mjs` for local preview. Never publish synthetic test responses or private Google Sheets backups. Confirm a real public submission by matching its receipt with the private Sheet row, then remove only the identified synthetic rows.
+The browser backup contains only its own questionnaire version. Its CSV has 201 columns; the unified Google export has 215. `admin.html` is a local JSON-file merger for this version, not a portal to other respondents' answers. Export all collected answers from the private Google Sheet.
 
-For editing, survey.json controls wording/options. Changes to options, codes, units, or conditions require a new version, matching Schema.gs/Logic.gs, a separate collector version, and an updated codebook. Recompute exports through the current logic; never trust client-supplied flat/asked data.
+## Editing and testing
+
+Edit question text/options in `survey.json`; keep coded values and field names stable unless the collector and Codebook are deliberately updated together. The collector rejects invalid fields and obsolete packet versions. See [collector instructions](google-sheets/README.md).
+
+```sh
+npm test
+node serve.mjs
+```
+
+The automated tests cover every question's validation, branching, missing-value coding, and unified collection compatibility. Deployment verification also checks the public resources and actual browser-to-Sheets submission. Use clearly marked synthetic answers for testing, and remove only those exact rows after verification.
+
+The product facts marked for confirmation remain limitations of the research concept. Range cut points are questionnaire design choices, not empirical estimates. Keep private responses, Sheet IDs, backups, and credentials out of this public repository.

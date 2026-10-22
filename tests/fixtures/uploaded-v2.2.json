@@ -1,5 +1,5 @@
 {
-  "version": "2.1",
+  "version": "2.2",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -215,6 +215,9 @@
           "condition": "eligible",
           "exportFields": [
             "V_Q6"
+          ],
+          "missingValues": [
+            99
           ]
         },
         {

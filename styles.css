@@ -8,3 +8,22 @@
 .product-intro-card li,.product-intro-card p{font-size:14px;line-height:1.65;margin:0;overflow-wrap:break-word}
 .product-intro-card strong{font-weight:650}
 @media(max-width:600px){.product-intro-card{padding:20px}.product-intro-card li,.product-intro-card p{font-size:15px;line-height:1.6}.product-intro-card h3{font-size:18px}.product-intro-grid{gap:14px}}
+
+/* The same feature appears on the same row for both concepts. */
+.product-comparison{margin:4px 0 24px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper)}
+.product-comparison table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;line-height:1.6}
+.product-comparison th,.product-comparison td{padding:15px;vertical-align:top;text-align:left;overflow-wrap:break-word}
+.product-comparison thead th{background:var(--accent);color:white;font-weight:650}
+.product-comparison thead th:first-child{width:20%}
+.product-comparison tbody th{background:var(--pale);color:var(--accent);font-weight:650}
+.product-comparison tbody tr+tr{border-top:1px solid var(--line)}
+.product-comparison td+td{border-left:1px solid var(--line)}
+.mobile-product{display:none}
+@media(max-width:600px){
+  .product-comparison table,.product-comparison tbody{display:block}
+  .product-comparison thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .product-comparison tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .product-comparison tbody th{grid-column:1/-1;padding:10px 13px}
+  .product-comparison td{padding:13px;font-size:14px}
+  .mobile-product{display:block;color:var(--accent);font-weight:650;font-size:12px;margin-bottom:7px}
+}
