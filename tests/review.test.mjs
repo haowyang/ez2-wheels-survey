@@ -8,12 +8,17 @@ import {allQuestions,expandedQuestions,validateItem,validateAll,makeRecord,verif
 const uploadBytes=await readFile(new URL('./fixtures/uploaded-v3.3.json',import.meta.url));
 const upload=JSON.parse(uploadBytes.toString('utf8'));
 
-test('the immutable latest upload is preserved except release version and two retained analytical metadata corrections',()=>{
+test('the immutable latest upload is preserved except release version, approved Q32 wording and two retained analytical metadata corrections',()=>{
   const actual=structuredClone(schema),expected=structuredClone(upload);
   assert.equal(actual.version,'3.3');
   assert.equal(createHash('sha256').update(uploadBytes).digest('hex'),'8034b120e027b5c2062776bc288f55e4e4c4a1ac914324ea8a4a235e039eb3de');
   actual.version=expected.version;
   const a=allQuestions(actual),e=allQuestions(expected);
+  const q32=a.find(q=>q.id==='Q32'),original32=e.find(q=>q.id==='Q32');
+  assert.equal(q32.text,'How likely are you to recommend eZ2 Wheels to friends or family?');
+  assert.equal(original32.text,'How likely are you to recommend eZ2 Wheels to a friend or classmate?');
+  // Only the approved Q32 sentence is normalized; its scale, audience and all other fields remain compared.
+  q32.text=original32.text;
   const q24=a.find(q=>q.id==='Q24'),original24=e.find(q=>q.id==='Q24');
   assert.notEqual(q24.measurement.coding,original24.measurement.coding);
   assert.match(q24.measurement.coding,/Combined weekly riding time/);

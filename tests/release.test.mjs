@@ -148,7 +148,7 @@ test('Q24 range boundaries remain exhaustive and mutually exclusive including ze
 });
 
 test('Q32 is exactly the required 0–10 recommendation scale, including a valid observed zero',()=>{
-  const q=question('Q32');assert.equal(q.text,'How likely are you to recommend eZ2 Wheels to a friend or classmate?');
+  const q=question('Q32');assert.equal(q.text,'How likely are you to recommend eZ2 Wheels to friends or family?');
   assert.equal(q.type,'scale');assert.equal(q.condition,'eligible');assert.equal(q.required,true);assert.equal(q.min,0);assert.equal(q.max,10);assert.equal(q.decimals,0);
   assert.deepEqual(q.options.map(o=>o.value),Array.from({length:11},(_,i)=>i));
   assert.equal(q.options[0].label,'0 = Not at all likely');assert.equal(q.options[10].label,'10 = Extremely likely');

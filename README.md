@@ -2,7 +2,7 @@
 
 Public questionnaire: https://haowyang.github.io/ez2-wheels-survey/
 
-This release implements the latest teammate revision of the 33-question questionnaire. Q24 now has five combined weekly-use categories without a standalone zero choice. Q32 is a required 0–10 likelihood-to-recommend scale for every eligible student. Respondent-facing wording, options and product prices match the latest supplied file; its older version label is advanced to 3.3. Previously approved analysis corrections remain: Q30's first compensation band includes zero, and Q24's combined weekly-use categories cannot determine the cheapest plan for each vehicle.
+This release implements the latest teammate revision of the 33-question questionnaire. Q24 now has five combined weekly-use categories without a standalone zero choice. Q32 is a required 0–10 likelihood-to-recommend scale for every eligible student. Respondent-facing wording, options and product prices match the latest supplied file except the subsequently approved Q32 friends-or-family wording; its older version label is advanced to 3.3. Previously approved analysis corrections remain: Q30's first compensation band includes zero, and Q24's combined weekly-use categories cannot determine the cheapest plan for each vehicle.
 
 ## Routing and presentation
 
@@ -14,7 +14,7 @@ This release implements the latest teammate revision of the 33-question question
 - Q24 asks one combined weekly-use question. Its codes are 1–5; the first choice is “Less than 15 minutes (or only occasionally)”, with the supplied interval [0, 15) minutes per week. Code 1 is a range category and does not identify an exact zero-use response. There is no code 0. Respondents who would ride less than weekly are asked to think about their average week.
 - Q25 and Q26 are shown only for products with Q18=2–5. Q26 has separate scooter and bike price tables. The three schemes share one randomized display order; None stays last. A scheme triggers Q27, while None triggers Q28, for that product only.
 - Q29=1 skips Q30. All selected Other options show their required text fields; changing an upstream answer removes hidden answers.
-- Q32 asks “How likely are you to recommend eZ2 Wheels to a friend or classmate?” Valid ratings are the integers 0–10. Zero means “Not at all likely” and remains a valid observed answer with asked=1, even when neither product is interesting.
+- Q32 asks “How likely are you to recommend eZ2 Wheels to friends or family?” Valid ratings are the integers 0–10. Zero means “Not at all likely” and remains a valid observed answer with asked=1, even when neither product is interesting.
 
 Q3's Other option is single-choice. Q6 retains the supplied distance ranges without adding a greater-than-5-mile category. Removed options are not silently restored. The hypothetical product descriptions, price tables and all other response scales remain as supplied.
 

@@ -1691,7 +1691,7 @@
           "number": 32,
           "oldRef": "v2.4 Q32 (reworded as 0–10 likelihood to recommend; now shown to all eligible respondents)",
           "variable": "V_Q32",
-          "text": "How likely are you to recommend eZ2 Wheels to a friend or classmate?",
+          "text": "How likely are you to recommend eZ2 Wheels to friends or family?",
           "type": "scale",
           "options": [
             {

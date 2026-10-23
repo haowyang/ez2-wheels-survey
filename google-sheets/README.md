@@ -2,7 +2,7 @@
 
 `UnifiedCollector.gs` is the only Apps Script source to deploy. It preserves the complete 2.2, 2.3, 2.4, 3.1 and 3.2 engines unchanged and adds the 3.3 engine. Do not append old `Schema.gs`, `Logic.gs`, `Code.gs` or the historical test fixtures.
 
-Release source SHA-256: `fe5e347759662a48a73d5d65a50ffe83ef4ef57d3d07f4e48940b233cb3abd7f`.
+Release source SHA-256: `5746326708072e544f3ebc3932830ddb12ecaca2d70576b7418182c142466cf2`.
 
 ## Existing Responses table: 413 columns, no expansion for 3.3
 
