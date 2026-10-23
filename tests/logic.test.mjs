@@ -9,14 +9,14 @@ test('all 1600 interest, experience, charger and plan combinations validate and 
     const a=filled({Q18_S:S,Q18_B:B,Q13:experience,Q29:charge,Q26_S:sPlan,Q26_B:bPlan});
     assert.deepEqual(validateAll(schema,a),[]);const r=makeRecord(schema,a,metadata);
     for(const key of ['Q14','Q15','Q16'])assert.equal(r.asked[key],experience===1,key);
-    for(const key of ['Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q12','Q29','Q31','Q33'])assert.equal(r.asked[key],true,key);
+    for(const key of ['Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q12','Q29','Q31','Q32','Q33'])assert.equal(r.asked[key],true,key);
     for(const [p,interest,plan] of [['S',S,sPlan],['B',B,bPlan]]){
       assert.equal(r.asked['Q19_'+p],interest===1);
       for(const id of ['Q25','Q26'])assert.equal(r.asked[id+'_'+p],interest>1);
       assert.equal(r.asked['Q27_'+p],interest>1&&plan<=3);
       assert.equal(r.asked['Q28_'+p],interest>1&&plan===4);
     }
-    for(const key of ['Q24','Q32'])assert.equal(r.asked[key],S>1||B>1,key);
+    for(const key of ['Q24'])assert.equal(r.asked[key],S>1||B>1,key);
     assert.equal(r.asked.Q30,charge>1);count++;
   }
   assert.equal(count,1600);
@@ -55,8 +55,8 @@ test('changing experience clears payment, locations, reliability and Other text'
 
 test('changing interest clears only hidden descendants and retains general attitudes, budget and charging',()=>{
   const next=cleanAnswers(schema,{...filled({Q26_B:4,Q28_B:[6],Q28_B__6_text:'Other reason'}),Q18_S:1,Q18_B:1});
-  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q28_B','Q28_B__6_text','Q32'])assert.equal(next[key],undefined,key);
-  for(const key of ['Q12','Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q22_B','Q23_S','Q29','Q30','Q31','Q33'])assert.ok(Object.hasOwn(next,key),key);
+  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q28_B','Q28_B__6_text'])assert.equal(next[key],undefined,key);
+  for(const key of ['Q12','Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q22_B','Q23_S','Q29','Q30','Q31','Q32','Q33'])assert.ok(Object.hasOwn(next,key),key);
   assert.ok(validateAll(schema,next).some(e=>e.key==='Q19_S'));
 });
 
@@ -76,10 +76,10 @@ test('liking never controls interest routes, including lowest liking with highes
   }
 });
 
-test('Q24 combined usage is one field and zero does not force pricing skips',()=>{
+test('Q24 combined usage is one field and its first band does not force pricing skips',()=>{
   assert.equal(question('Q24').type,'single');assert.deepEqual(question('Q24').exportFields,['V_Q24_band']);
-  const r=makeRecord(schema,filled({Q24:0,Q12:0,Q25_S:1}),metadata);
-  assert.equal(r.flat.V_Q24_band,0);assert.equal(r.flat.V_Q24_band__asked,1);
+  const r=makeRecord(schema,filled({Q24:1,Q12:0,Q25_S:1}),metadata);
+  assert.equal(r.flat.V_Q24_band,1);assert.equal(r.flat.V_Q24_band__asked,1);
   assert.equal(r.asked.Q26_S,true);assert.equal(r.asked.Q26_B,true);
   assert.equal(r.asked.Q24_S,undefined);assert.equal(r.asked.Q24_B,undefined);
 });

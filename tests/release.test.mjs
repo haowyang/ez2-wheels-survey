@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {schema,question,metadata,filled} from './helpers.mjs';
-import {expandedQuestions,cleanAnswers,validateAll,makeRecord,visibleProducts,updateMultiSelection} from '../logic.mjs';
+import {expandedQuestions,cleanAnswers,validateItem,validateAll,makeRecord,visibleProducts,updateMultiSelection} from '../logic.mjs';
 import {questionsForSection,pricingOptionsHtml,SCREEN_OUT_TEXT} from '../presentation.mjs';
 import {productIntroHtml} from '../product-intro.mjs';
 import {conditionMet} from '../logic.mjs';
@@ -19,10 +19,10 @@ test('screenshot requirement 2: Q13 No skips exactly experience follow-ups Q14�
 test('screenshot requirement 3: only the product rated uninterested receives Q19',()=>{
   for(const [S,B,expected] of [[1,5,['S']],[5,1,['B']],[5,5,[]]])assert.deepEqual(visibleProducts(question('Q19'),filled({Q18_S:S,Q18_B:B})),expected);
 });
-test('updated requirement 4: two uninterested products skip Q24–Q28 and Q32; Q31 remains for all eligible students',()=>{
+test('updated requirement 4: two uninterested products skip Q24–Q28; Q31 and Q32 remain for all eligible students',()=>{
   const a=filled({Q18_S:1,Q18_B:1});
-  for(const item of expandedQuestions(schema,a))assert.equal([24,25,26,27,28,32].includes(item.q.number),false,item.key);
-  for(const id of ['Q19_S','Q19_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q29','Q30','Q31','Q33'])assert.ok(keys(a).includes(id),id);
+  for(const item of expandedQuestions(schema,a))assert.equal([24,25,26,27,28].includes(item.q.number),false,item.key);
+  for(const id of ['Q19_S','Q19_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q29','Q30','Q31','Q32','Q33'])assert.ok(keys(a).includes(id),id);
 });
 test('screenshot requirement 5: plans 1–3 show Q27 and None 4 shows Q28 independently',()=>{
   for(const s of [1,2,3,4])for(const b of [1,2,3,4]){
@@ -76,9 +76,9 @@ test('pricing text is HTML-escaped and missing per-product pricing fails instead
   const html=pricingOptionsHtml(data,question('Q26'),'S','Q26_S',1,[1,2,3]);assert.doesNotMatch(html,/<img/);assert.match(html,/&lt;img/);assert.match(html,/A &amp; B/);
   assert.throws(()=>pricingOptionsHtml({...schema,plansByProduct:{}},question('Q26'),'S','Q26_S',1,[1,2,3]),/missing/);
 });
-test('all entry points load 3.2 resources and app uses tested presentation and cleanup functions',async()=>{
+test('all entry points load 3.3 resources and app uses tested presentation and cleanup functions',async()=>{
   for(const name of ['app.mjs','admin.mjs','index.html','admin.html','presentation.mjs']){
-    const source=await readFile(new URL('../'+name,import.meta.url),'utf8');assert.doesNotMatch(source,/\?v=(?:2\.|3\.1)/,name);assert.match(source,/\?v=3\.2/,name);
+    const source=await readFile(new URL('../'+name,import.meta.url),'utf8');assert.doesNotMatch(source,/\?v=(?:2\.|3\.[12])/,name);assert.match(source,/\?v=3\.3/,name);
     if(name==='app.mjs'){
       assert.match(source,/questionsForSection\(section,state.answers\)/);assert.match(source,/pricingOptionsHtml\(schema,q,product,key,value,state.planOrder\)/);
       assert.match(source,/inputHtml\(q,keyFor\(q,p\),p\)/);assert.match(source,/state.answers=cleanAnswers\(schema,state.answers\)/);
@@ -121,11 +121,60 @@ test('all 75 living-and-interest combinations require Q31; Q6 still depends only
     const a=filled({Q5:living,Q18_S:S,Q18_B:B,Q31:0});assert.deepEqual(validateAll(schema,a),[]);
     const r=makeRecord(schema,a,metadata);assert.equal(r.asked.Q6,living===1);assert.equal(r.asked.Q31,true);assert.equal(r.flat.V_Q31,0);assert.equal(r.flat.V_Q31__asked,1);
     const missing={...a};delete missing.Q31;assert.ok(validateAll(schema,missing).some(e=>e.key==='Q31'));assert.throws(()=>makeRecord(schema,missing,metadata));
-    assert.equal(r.asked.Q32,S>1||B>1);assert.equal(r.asked.Q24,S>1||B>1);
+    assert.equal(r.asked.Q32,true);assert.equal(r.asked.Q24,S>1||B>1);
   }
 });
 
 test('Q31 survives interest changes and remains absent for an ineligible respondent',()=>{
   const next=cleanAnswers(schema,{...filled({Q31:8}),Q18_S:1,Q18_B:1});assert.equal(next.Q31,8);assert.ok(keys(next).includes('Q31'));
   assert.equal(cleanAnswers(schema,{...next,Q1:0}).Q31,undefined);assert.equal(keys({Q1:0,Q31:8}).includes('Q31'),false);
+});
+
+test('Q24 uses only codes 1–5 and rejects the former standalone zero code',()=>{
+  const q=question('Q24');assert.equal(q.type,'single');assert.deepEqual(q.options.map(o=>o.value),[1,2,3,4,5]);
+  assert.equal(q.options[0].label,'Less than 15 minutes (or only occasionally)');
+  assert.equal(q.help,'Count riding time only. If you would ride less than once a week, think about your average week.');
+  for(const value of [1,2,3,4,5,'1','2','3','4','5'])assert.deepEqual(validateItem(q,'Q24',{Q24:value}),[]);
+  for(const value of [0,'0',99,'99',-1,6,1.5,undefined,'',null,[1],true])assert.ok(validateItem(q,'Q24',{Q24:value}).length,JSON.stringify(value));
+  assert.throws(()=>makeRecord(schema,filled({Q24:0}),metadata));
+});
+
+test('Q24 range boundaries remain exhaustive and mutually exclusive including zero in category 1',()=>{
+  const q=question('Q24');
+  const code=x=>q.options.filter(({interval:i})=>(i.lowerInclusive?x>=i.lower:x>i.lower)&&(i.upper===null||(i.upperInclusive?x<=i.upper:x<i.upper))).map(o=>o.value);
+  for(const [amount,expected] of [[0,1],[.001,1],[14.999,1],[15,2],[29.999,2],[30,3],[59.999,3],[60,4],[119.999,4],[120,5],[1000000,5]])assert.deepEqual(code(amount),[expected],String(amount));
+  assert.deepEqual(code(-.001),[]);assert.match(q.measurement.coding,/does not identify a separate zero-use response/);
+  assert.match(q.measurement.coding,/Do not calculate means/);assert.doesNotMatch(q.measurement.coding,/0 is a substantive zero|break-even|identical/);
+});
+
+test('Q32 is exactly the required 0–10 recommendation scale, including a valid observed zero',()=>{
+  const q=question('Q32');assert.equal(q.text,'How likely are you to recommend eZ2 Wheels to a friend or classmate?');
+  assert.equal(q.type,'scale');assert.equal(q.condition,'eligible');assert.equal(q.required,true);assert.equal(q.min,0);assert.equal(q.max,10);assert.equal(q.decimals,0);
+  assert.deepEqual(q.options.map(o=>o.value),Array.from({length:11},(_,i)=>i));
+  assert.equal(q.options[0].label,'0 = Not at all likely');assert.equal(q.options[10].label,'10 = Extremely likely');
+  for(let value=0;value<=10;value++)for(const input of [value,String(value)]){
+    const r=makeRecord(schema,filled({Q32:input}),metadata);assert.equal(r.answers.Q32,input);assert.equal(r.flat.V_Q32,value);assert.equal(r.flat.V_Q32__asked,1);
+  }
+  for(const input of [undefined,null,'',-1,11,.5,NaN,Infinity,true,false,[0],{},'Maybe','No'])assert.ok(validateItem(q,'Q32',{Q32:input}).length,JSON.stringify(input));
+});
+
+test('3.3 acceptance A: interested student can answer Q24=1 and Q32=10',()=>{
+  const a=filled({Q18_S:5,Q18_B:5,Q24:1,Q32:10});assert.deepEqual(validateAll(schema,a),[]);
+  const r=makeRecord(schema,a,metadata);assert.equal(r.flat.V_Q24_band,1);assert.equal(r.flat.V_Q24_band__asked,1);assert.equal(r.flat.V_Q32,10);assert.equal(r.flat.V_Q32__asked,1);
+});
+
+test('3.3 acceptance B: two uninterested products hide Q24 but still require and accept Q32=0',()=>{
+  const a=filled({Q18_S:1,Q18_B:1,Q24:1,Q32:0});assert.equal(a.Q24,undefined);assert.deepEqual(validateAll(schema,a),[]);
+  const r=makeRecord(schema,a,metadata);assert.equal(r.asked.Q24,false);assert.equal(r.flat.V_Q24_band,'');assert.equal(r.flat.V_Q24_band__asked,0);
+  assert.equal(r.asked.Q31,true);assert.equal(r.asked.Q32,true);assert.equal(r.flat.V_Q32,0);assert.equal(r.flat.V_Q32__asked,1);
+  const missing={...a};delete missing.Q32;assert.ok(validateAll(schema,missing).some(e=>e.key==='Q32'));assert.throws(()=>makeRecord(schema,missing,metadata));
+});
+
+test('Q32 remains required across all living and interest combinations and is cleared only by ineligibility',()=>{
+  for(const living of [1,2,3])for(const S of [1,2,3,4,5])for(const B of [1,2,3,4,5]){
+    const a=filled({Q5:living,Q18_S:S,Q18_B:B,Q32:0}),missing={...a};delete missing.Q32;
+    assert.ok(validateAll(schema,missing).some(e=>e.key==='Q32'));assert.equal(makeRecord(schema,a,metadata).flat.V_Q32,0);
+  }
+  const next=cleanAnswers(schema,{...filled({Q32:10}),Q18_S:1,Q18_B:1});assert.equal(next.Q32,10);
+  const no=makeRecord(schema,{Q1:0,Q32:10},metadata);assert.equal(no.answers.Q32,undefined);assert.equal(no.flat.V_Q32,'');assert.equal(no.flat.V_Q32__asked,0);
 });

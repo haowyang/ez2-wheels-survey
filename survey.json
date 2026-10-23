@@ -1,5 +1,5 @@
 {
-  "version": "3.2",
+  "version": "3.3",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -1165,28 +1165,18 @@
         {
           "id": "Q24",
           "number": 24,
-          "oldRef": "v2.4 Q24 (one question for both vehicles; ranges aligned with pricing; Not sure yet removed)",
+          "oldRef": "v2.4 Q24 (one question for both vehicles; ranges aligned with pricing; zero and Not sure yet removed)",
           "variable": "V_Q24_band",
           "text": "In a typical week during the semester, about how much time would you expect to spend riding eZ2 Wheels vehicles (scooters, bikes, or both)?",
           "type": "single",
           "options": [
             {
-              "value": 0,
-              "label": "0 — I would not ride in a typical week",
-              "interval": {
-                "lower": 0,
-                "upper": 0,
-                "lowerInclusive": true,
-                "upperInclusive": true
-              }
-            },
-            {
               "value": 1,
-              "label": "More than 0 but less than 15 minutes",
+              "label": "Less than 15 minutes (or only occasionally)",
               "interval": {
                 "lower": 0,
                 "upper": 15,
-                "lowerInclusive": false,
+                "lowerInclusive": true,
                 "upperInclusive": false
               }
             },
@@ -1233,14 +1223,14 @@
           ],
           "required": true,
           "condition": "any_interest",
-          "help": "Count riding time only. Choose 0 if you would not ride in a typical week.",
+          "help": "Count riding time only. If you would ride less than once a week, think about your average week.",
           "exportFields": [
             "V_Q24_band"
           ],
           "measurement": {
             "kind": "ordered_category",
             "unit": "minutes_per_week",
-            "coding": "Values are category codes, not measured quantities. 0 is a substantive zero. Do not calculate means of the codes or silently replace categories with midpoints. Combined weekly riding time across both vehicles cannot determine the cost of a plan for either vehicle or whether its per-ride time limit would apply."
+            "coding": "Values are category codes, not measured quantities. The first band includes zero; it does not identify a separate zero-use response. Do not calculate means of the codes or silently replace categories with midpoints. Combined weekly riding time across both vehicles cannot determine the cost of a plan for either vehicle or whether its per-ride time limit would apply."
           }
         },
         {
@@ -1699,26 +1689,61 @@
         {
           "id": "Q32",
           "number": 32,
-          "oldRef": "v2.4 Q32",
+          "oldRef": "v2.4 Q32 (reworded as 0–10 likelihood to recommend; now shown to all eligible respondents)",
           "variable": "V_Q32",
-          "text": "Would you tell friends or family about eZ2 Wheels, share it on social media, or otherwise recommend it?",
-          "type": "single",
+          "text": "How likely are you to recommend eZ2 Wheels to a friend or classmate?",
+          "type": "scale",
           "options": [
             {
+              "value": 0,
+              "label": "0 = Not at all likely"
+            },
+            {
               "value": 1,
-              "label": "Yes, definitely"
+              "label": "1"
             },
             {
               "value": 2,
-              "label": "Maybe"
+              "label": "2"
             },
             {
               "value": 3,
-              "label": "No"
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Extremely likely"
             }
           ],
           "required": true,
-          "condition": "any_interest",
+          "condition": "eligible",
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
           "exportFields": [
             "V_Q32"
           ]

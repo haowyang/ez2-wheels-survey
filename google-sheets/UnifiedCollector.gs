@@ -9473,6 +9473,1966 @@ function verifyImportedRecord(schema,record) {
 }
 
 return Object.freeze({schema:SURVEY_SCHEMA,cleanAnswers:cleanAnswers,validateAll:validateAll,makeRecord:makeRecord});
+})(),
+"3.3":(function(){
+const SURVEY_SCHEMA = {
+  "version": "3.3",
+  "title": "eZ2 Wheels Student Survey",
+  "intro": [
+    "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
+    "The questionnaire does not ask for your name, email address, or student ID.",
+    "BNS plans to offer electric scooters (eZ2 S) and electric bikes (eZ2 B) on university campuses under the name eZ2 Wheels. You would rent them through the BNS app instead of buying them."
+  ],
+  "conditionDefinitions": {
+    "always": "Shown to every respondent.",
+    "eligible": "V_Q1 = 1",
+    "on_campus": "V_Q1 = 1 and V_Q5 = 1",
+    "experienced": "V_Q1 = 1 and V_Q13 = 1",
+    "interested_S": "V_Q1 = 1 and V_Q18_S is 2–5",
+    "interested_B": "V_Q1 = 1 and V_Q18_B is 2–5",
+    "uninterested_S": "V_Q1 = 1 and V_Q18_S = 1",
+    "uninterested_B": "V_Q1 = 1 and V_Q18_B = 1",
+    "any_interest": "interested_S or interested_B",
+    "chose_plan_S": "interested_S and V_Q26_S is 1–3",
+    "chose_plan_B": "interested_B and V_Q26_B is 1–3",
+    "chose_none_S": "interested_S and V_Q26_S = 4",
+    "chose_none_B": "interested_B and V_Q26_B = 4",
+    "charger_interest": "V_Q1 = 1 and V_Q29 is 2–5"
+  },
+  "productIntro": [
+    "eZ2 S — Electric scooters\nPick-up: Use the app to find and unlock the nearest available scooter anywhere on campus.\nReturn: Leave it near your destination at a spot the app shows you, then end your ride in the app.\nCharging: Charging stations are located around campus, and scooters are kept charged and ready to ride.",
+    "eZ2 B — Electric bikes\nPick-up: Use the app to find and unlock an available bike at a designated bike stand on campus.\nReturn: Return it to any designated bike stand on campus, then end your ride in the app.\nCharging: Charging stations are located around campus, and bikes are kept charged and ready to ride."
+  ],
+  "pricingIntro": "The prices below are hypothetical scenarios for this survey. Each vehicle has three plans. Bikes are priced lower than scooters because they must be returned to a bike stand. Monthly plans renew every 30 days and can be canceled at any time. Please consider the plans for each offering you are interested in.",
+  "plans": [
+    {
+      "value": 1,
+      "label": "Scheme 1 – Pay per use",
+      "description": "Scooters (eZ2 S): $0.25 per minute. Bikes (eZ2 B): $0.20 per minute. No monthly fee and no unlock fee; pay only for the minutes you ride."
+    },
+    {
+      "value": 2,
+      "label": "Scheme 2 – Monthly subscription",
+      "description": "Scooters (eZ2 S): $39.99 per month, unlimited rides up to 45 minutes each. Bikes (eZ2 B): $31.99 per month, unlimited rides up to 60 minutes each."
+    },
+    {
+      "value": 3,
+      "label": "Scheme 3 – Hybrid",
+      "description": "Scooters (eZ2 S): $14.99 per month, includes 120 minutes of riding, then $0.20 per extra minute. Bikes (eZ2 B): $11.99 per month, includes 120 minutes of riding, then $0.16 per extra minute. Unused minutes do not carry over."
+    }
+  ],
+  "plansByProduct": {
+    "S": [
+      {
+        "value": 1,
+        "label": "Scheme 1 – Pay per use",
+        "price": "$0.25 per minute",
+        "description": "No monthly fee and no unlock fee; pay only for the minutes you ride"
+      },
+      {
+        "value": 2,
+        "label": "Scheme 2 – Monthly subscription",
+        "price": "$39.99 per month",
+        "description": "Unlimited rides, up to 45 minutes each"
+      },
+      {
+        "value": 3,
+        "label": "Scheme 3 – Hybrid",
+        "price": "$14.99 per month",
+        "description": "Includes 120 minutes of riding; $0.20 per extra minute; unused minutes do not carry over"
+      }
+    ],
+    "B": [
+      {
+        "value": 1,
+        "label": "Scheme 1 – Pay per use",
+        "price": "$0.20 per minute",
+        "description": "No monthly fee and no unlock fee; pay only for the minutes you ride"
+      },
+      {
+        "value": 2,
+        "label": "Scheme 2 – Monthly subscription",
+        "price": "$31.99 per month",
+        "description": "Unlimited rides, up to 60 minutes each"
+      },
+      {
+        "value": 3,
+        "label": "Scheme 3 – Hybrid",
+        "price": "$11.99 per month",
+        "description": "Includes 120 minutes of riding; $0.16 per extra minute; unused minutes do not carry over"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "screening",
+      "title": "Section 1 – Screener",
+      "questions": [
+        {
+          "id": "Q1",
+          "number": 1,
+          "oldRef": "v2.4 Q1 (age requirement added)",
+          "variable": "V_Q1",
+          "text": "Are you 18 or older and currently enrolled as a student at a large public university in the U.S.?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes"
+            },
+            {
+              "value": 0,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "always",
+          "exportFields": [
+            "V_Q1"
+          ]
+        },
+        {
+          "id": "Q2",
+          "number": 2,
+          "oldRef": "v2.4 Q2",
+          "variable": "V_Q2",
+          "text": "Which university do you attend?",
+          "type": "text",
+          "options": [],
+          "required": true,
+          "condition": "eligible",
+          "maxLength": 120,
+          "exportFields": [
+            "V_Q2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "title": "Section 2 – About You",
+      "questions": [
+        {
+          "id": "Q3",
+          "number": 3,
+          "oldRef": "v2.4 Q3 (graduate options split; Other added)",
+          "variable": "V_Q3",
+          "text": "What is your current year or level of study?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "First-year"
+            },
+            {
+              "value": 2,
+              "label": "Sophomore"
+            },
+            {
+              "value": 3,
+              "label": "Junior"
+            },
+            {
+              "value": 4,
+              "label": "Senior"
+            },
+            {
+              "value": 5,
+              "label": "Master’s"
+            },
+            {
+              "value": 6,
+              "label": "Doctoral (PhD)"
+            },
+            {
+              "value": 7,
+              "label": "Professional (law, medicine, pharmacy, etc.)"
+            },
+            {
+              "value": 8,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherField": "V_Q3_Other_txt"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q3",
+            "V_Q3_Other_txt"
+          ]
+        },
+        {
+          "id": "Q4",
+          "number": 4,
+          "oldRef": "v2.4 Q4 (reworded; equal ranges)",
+          "variable": "V_Q4",
+          "text": "What is your age?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "18–20"
+            },
+            {
+              "value": 2,
+              "label": "21–23"
+            },
+            {
+              "value": 3,
+              "label": "24–26"
+            },
+            {
+              "value": 4,
+              "label": "27–29"
+            },
+            {
+              "value": 5,
+              "label": "30 or older"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q4"
+          ]
+        },
+        {
+          "id": "Q5",
+          "number": 5,
+          "oldRef": "v2.4 Q5 (now routes Q6)",
+          "variable": "V_Q5",
+          "text": "Where do you live during the semester?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "On campus"
+            },
+            {
+              "value": 2,
+              "label": "Off campus, within walking distance of campus"
+            },
+            {
+              "value": 3,
+              "label": "Off campus, beyond walking distance of campus"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q5"
+          ]
+        },
+        {
+          "id": "Q6",
+          "number": 6,
+          "oldRef": "v2.4 Q6 (shown only if Q5 = On campus; Not applicable removed)",
+          "variable": "V_Q6",
+          "text": "About how far is it from where you live to your classes?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than 0.5 miles"
+            },
+            {
+              "value": 2,
+              "label": "0.5 to less than 1 mile"
+            },
+            {
+              "value": 3,
+              "label": "1 to less than 2 miles"
+            },
+            {
+              "value": 4,
+              "label": "2 to less than 3 miles"
+            },
+            {
+              "value": 5,
+              "label": "3–5 miles"
+            }
+          ],
+          "required": true,
+          "condition": "on_campus",
+          "exportFields": [
+            "V_Q6"
+          ]
+        },
+        {
+          "id": "Q7",
+          "number": 7,
+          "oldRef": "v2.4 Q7 (reworded)",
+          "variable": "V_Q7",
+          "text": "How many days per week are you usually on campus?",
+          "type": "number",
+          "options": [],
+          "required": true,
+          "condition": "eligible",
+          "min": 0,
+          "max": 7,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q7"
+          ]
+        },
+        {
+          "id": "Q8",
+          "number": 8,
+          "oldRef": "v2.4 Q8 (option 9 removed)",
+          "variable": "V_Q8",
+          "text": "How do you commute between locations on campus? (For example, from one class to the next, to purchase meals at the Student Center, or to visit the library/gym.) Select all that apply.",
+          "type": "multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Walk"
+            },
+            {
+              "value": 2,
+              "label": "Own bike"
+            },
+            {
+              "value": 3,
+              "label": "Own scooter / skateboard"
+            },
+            {
+              "value": 4,
+              "label": "Car"
+            },
+            {
+              "value": 5,
+              "label": "Campus shuttle / bus"
+            },
+            {
+              "value": 6,
+              "label": "Rideshare"
+            },
+            {
+              "value": 7,
+              "label": "Shared scooter / bike service"
+            },
+            {
+              "value": 8,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherField": "V_Q8_Other_txt"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q8_1",
+            "V_Q8_2",
+            "V_Q8_3",
+            "V_Q8_4",
+            "V_Q8_5",
+            "V_Q8_6",
+            "V_Q8_7",
+            "V_Q8_8",
+            "V_Q8_Other_txt"
+          ]
+        },
+        {
+          "id": "Q9",
+          "number": 9,
+          "oldRef": "v2.4 Q9",
+          "variable": "V_Q9",
+          "text": "Do you have regular access to a car?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes"
+            },
+            {
+              "value": 0,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q9"
+          ]
+        },
+        {
+          "id": "Q10",
+          "number": 10,
+          "oldRef": "v2.4 Q10",
+          "variable": "V_Q10",
+          "text": "How important is reducing travel time when moving between locations on campus?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Not at all important"
+            },
+            {
+              "value": 2,
+              "label": "Slightly important"
+            },
+            {
+              "value": 3,
+              "label": "Moderately important"
+            },
+            {
+              "value": 4,
+              "label": "Very important"
+            },
+            {
+              "value": 5,
+              "label": "Extremely important"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q10"
+          ]
+        },
+        {
+          "id": "Q11",
+          "number": 11,
+          "oldRef": "v2.4 Q11 (reworded)",
+          "variable": "V_Q11",
+          "text": "In a typical month, about how much do you spend in total on transportation of all kinds, both on and off campus?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "$0"
+            },
+            {
+              "value": 2,
+              "label": "More than $0 but less than $20"
+            },
+            {
+              "value": 3,
+              "label": "$20 to less than $50"
+            },
+            {
+              "value": 4,
+              "label": "$50 to less than $100"
+            },
+            {
+              "value": 5,
+              "label": "$100 to less than $150"
+            },
+            {
+              "value": 6,
+              "label": "$150 to less than $200"
+            },
+            {
+              "value": 7,
+              "label": "$200 or more"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "help": "Include gas, parking, transit passes, rideshare, and shared scooters or bikes. Do not include car payments or insurance.",
+          "exportFields": [
+            "V_Q11"
+          ]
+        },
+        {
+          "id": "Q12",
+          "number": 12,
+          "oldRef": "v2.4 Q26 (moved; reworded; ranges aligned with plan prices; Not sure yet removed)",
+          "variable": "V_Q12_band",
+          "text": "What is the most you would pay per month to get around campus?",
+          "type": "single",
+          "options": [
+            {
+              "value": 0,
+              "label": "$0 — I would not pay anything",
+              "interval": {
+                "lower": 0,
+                "upper": 0,
+                "lowerInclusive": true,
+                "upperInclusive": true
+              }
+            },
+            {
+              "value": 1,
+              "label": "More than $0 but less than $10",
+              "interval": {
+                "lower": 0,
+                "upper": 10,
+                "lowerInclusive": false,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "$10 to less than $15",
+              "interval": {
+                "lower": 10,
+                "upper": 15,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "$15 to less than $30",
+              "interval": {
+                "lower": 15,
+                "upper": 30,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "$30 to less than $40",
+              "interval": {
+                "lower": 30,
+                "upper": 40,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "$40 to less than $60",
+              "interval": {
+                "lower": 40,
+                "upper": 60,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 6,
+              "label": "$60 or more",
+              "interval": {
+                "lower": 60,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "help": "Include all ways of getting around campus. Do not include travel to and from campus.",
+          "exportFields": [
+            "V_Q12_band"
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "USD_per_month",
+            "coding": "Values are category codes, not measured quantities. 0 is a substantive zero. Range boundaries align with the eZ2 plan prices ($11.99, $14.99, $31.99, $39.99). Do not calculate means of the codes or silently replace categories with midpoints."
+          }
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "title": "Section 3 – Shared-Vehicle Experience",
+      "questions": [
+        {
+          "id": "Q13",
+          "number": 13,
+          "oldRef": "v2.4 Q12 (replaced with Yes/No)",
+          "variable": "V_Q13",
+          "text": "Have you ever used a shared electric scooter or bike (for example, Lime, Bird, or Veo)?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Yes"
+            },
+            {
+              "value": 0,
+              "label": "No"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "exportFields": [
+            "V_Q13"
+          ]
+        },
+        {
+          "id": "Q14",
+          "number": 14,
+          "oldRef": "New in v3.1",
+          "variable": "V_Q14",
+          "text": "How did you usually pay for shared electric scooters or bikes?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Paid per ride"
+            },
+            {
+              "value": 2,
+              "label": "Weekly or monthly pass"
+            },
+            {
+              "value": 3,
+              "label": "Student or discount program"
+            },
+            {
+              "value": 4,
+              "label": "Free rides or promo credits"
+            }
+          ],
+          "required": true,
+          "condition": "experienced",
+          "exportFields": [
+            "V_Q14"
+          ]
+        },
+        {
+          "id": "Q15",
+          "number": 15,
+          "oldRef": "v2.4 Q13 (reworded)",
+          "variable": "V_Q15",
+          "text": "Where have you ridden shared electric scooters or bikes? Select all that apply.",
+          "type": "multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "On my own campus"
+            },
+            {
+              "value": 2,
+              "label": "Another university campus"
+            },
+            {
+              "value": 3,
+              "label": "In a city (e.g., downtown, near my home)"
+            },
+            {
+              "value": 4,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherField": "V_Q15_Other_txt"
+            }
+          ],
+          "required": true,
+          "condition": "experienced",
+          "exportFields": [
+            "V_Q15_1",
+            "V_Q15_2",
+            "V_Q15_3",
+            "V_Q15_4",
+            "V_Q15_Other_txt"
+          ]
+        },
+        {
+          "id": "Q16",
+          "number": 16,
+          "oldRef": "v2.4 Q14 (Not enough experience removed)",
+          "variable": "V_Q16",
+          "text": "Based on your experience using shared vehicles, how reliable do you consider them for short-distance commuting?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Not at all reliable"
+            },
+            {
+              "value": 2,
+              "label": "Slightly reliable"
+            },
+            {
+              "value": 3,
+              "label": "Moderately reliable"
+            },
+            {
+              "value": 4,
+              "label": "Very reliable"
+            },
+            {
+              "value": 5,
+              "label": "Extremely reliable"
+            }
+          ],
+          "required": true,
+          "condition": "experienced",
+          "exportFields": [
+            "V_Q16"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interest",
+      "title": "Section 4 – Interest in eZ2 Wheels",
+      "questions": [
+        {
+          "id": "Q17",
+          "number": 17,
+          "oldRef": "v2.4 Q15",
+          "variable": "V_Q17",
+          "text": "How much do you like each offering, considering both the product and how it works?",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = A great deal"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "help": "Choose one rating for each offering.",
+          "exportFields": [
+            "V_Q17_S",
+            "V_Q17_B"
+          ]
+        },
+        {
+          "id": "Q18",
+          "number": 18,
+          "oldRef": "v2.4 Q16",
+          "variable": "V_Q18",
+          "text": "How interested would you be in using each type of shared electric vehicle for commuting on campus?",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Not at all interested"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5 = Extremely interested"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 5,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "help": "Choose one rating for each offering.",
+          "exportFields": [
+            "V_Q18_S",
+            "V_Q18_B"
+          ]
+        },
+        {
+          "id": "Q19",
+          "number": 19,
+          "oldRef": "v2.4 Q17",
+          "variable": "V_Q19",
+          "text": "Since you selected that you are not interested, for each offering you are not interested in, select all the reasons that apply.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "I do not need additional on-campus transportation."
+            },
+            {
+              "value": 2,
+              "label": "I prefer my current way of getting around."
+            },
+            {
+              "value": 3,
+              "label": "The service would not cover the trips I need."
+            },
+            {
+              "value": 4,
+              "label": "Weather would make this option unsuitable for me."
+            },
+            {
+              "value": 5,
+              "label": "Using a smartphone app would be difficult for me."
+            },
+            {
+              "value": 6,
+              "label": "I need more information about the service."
+            },
+            {
+              "value": 7,
+              "label": "Other reason (specify separately for each service)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q19_Other_txt_S",
+                "B": "V_Q19_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "uninterested_S || uninterested_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "uninterested_S",
+            "B": "uninterested_B"
+          },
+          "exportFields": [
+            "V_Q19_1_S",
+            "V_Q19_2_S",
+            "V_Q19_3_S",
+            "V_Q19_4_S",
+            "V_Q19_5_S",
+            "V_Q19_6_S",
+            "V_Q19_7_S",
+            "V_Q19_Other_txt_S",
+            "V_Q19_1_B",
+            "V_Q19_2_B",
+            "V_Q19_3_B",
+            "V_Q19_4_B",
+            "V_Q19_5_B",
+            "V_Q19_6_B",
+            "V_Q19_7_B",
+            "V_Q19_Other_txt_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attitudes",
+      "title": "Section 5 – Views on Electric Bikes and Scooters",
+      "description": "Rate each statement on a scale of 1 to 10, where 1 = Strongly disagree and 10 = Strongly agree. For the statements about safety, comfort, and pickup and return, rate each vehicle separately.",
+      "questions": [
+        {
+          "id": "Q20",
+          "number": 20,
+          "oldRef": "v2.4 Q18 (changed to 1–10 scale; reworded as statement)",
+          "variable": "V_Q20",
+          "text": "Electric bikes and scooters help reduce the environmental impact of transportation on campus.",
+          "type": "scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q20"
+          ]
+        },
+        {
+          "id": "Q21",
+          "number": 21,
+          "oldRef": "v2.4 Q19",
+          "variable": "V_Q21",
+          "text": "I would feel safe using this transportation option.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q21_S",
+            "V_Q21_B"
+          ]
+        },
+        {
+          "id": "Q22",
+          "number": 22,
+          "oldRef": "v2.4 Q20",
+          "variable": "V_Q22",
+          "text": "I would be comfortable operating this type of vehicle.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q22_S",
+            "V_Q22_B"
+          ]
+        },
+        {
+          "id": "Q23",
+          "number": 23,
+          "oldRef": "v2.4 Q21",
+          "variable": "V_Q23",
+          "text": "The pickup and return requirements would be convenient for me.",
+          "type": "product_scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Strongly disagree"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Strongly agree"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "products": [
+            "S",
+            "B"
+          ],
+          "min": 1,
+          "max": 10,
+          "decimals": 0,
+          "productConditions": {
+            "S": "eligible",
+            "B": "eligible"
+          },
+          "exportFields": [
+            "V_Q23_S",
+            "V_Q23_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "expected_use",
+      "title": "Section 6 – Expected Use",
+      "questions": [
+        {
+          "id": "Q24",
+          "number": 24,
+          "oldRef": "v2.4 Q24 (one question for both vehicles; ranges aligned with pricing; zero and Not sure yet removed)",
+          "variable": "V_Q24_band",
+          "text": "In a typical week during the semester, about how much time would you expect to spend riding eZ2 Wheels vehicles (scooters, bikes, or both)?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than 15 minutes (or only occasionally)",
+              "interval": {
+                "lower": 0,
+                "upper": 15,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "15 to less than 30 minutes",
+              "interval": {
+                "lower": 15,
+                "upper": 30,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "30 minutes to less than 1 hour",
+              "interval": {
+                "lower": 30,
+                "upper": 60,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "1 to less than 2 hours",
+              "interval": {
+                "lower": 60,
+                "upper": 120,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "2 hours or more",
+              "interval": {
+                "lower": 120,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "help": "Count riding time only. If you would ride less than once a week, think about your average week.",
+          "exportFields": [
+            "V_Q24_band"
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "minutes_per_week",
+            "coding": "Values are category codes, not measured quantities. The first band includes zero; it does not identify a separate zero-use response. Do not calculate means of the codes or silently replace categories with midpoints. Combined weekly riding time across both vehicles cannot determine the cost of a plan for either vehicle or whether its per-ride time limit would apply."
+          }
+        },
+        {
+          "id": "Q25",
+          "number": 25,
+          "oldRef": "v2.4 Q25 (ranges tightened; Not sure yet removed)",
+          "variable": "V_Q25_band",
+          "text": "What is the longest you would be willing to walk to pick up an available vehicle on campus?",
+          "type": "product_single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than 2 minutes",
+              "interval": {
+                "lower": 0,
+                "upper": 2,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "2 to less than 5 minutes",
+              "interval": {
+                "lower": 2,
+                "upper": 5,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "5 to less than 10 minutes",
+              "interval": {
+                "lower": 5,
+                "upper": 10,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "10 minutes or more",
+              "interval": {
+                "lower": 10,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "interested_S",
+            "B": "interested_B"
+          },
+          "help": "Choose one range for each offering shown. Think about one pickup, not your total walking time for the day.",
+          "exportFields": [
+            "V_Q25_band_S",
+            "V_Q25_band_B"
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "minutes_per_pickup",
+            "coding": "Values are category codes, not measured quantities. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
+        }
+      ]
+    },
+    {
+      "id": "pricing",
+      "title": "Section 7 – Pricing Preferences",
+      "questions": [
+        {
+          "id": "Q26",
+          "number": 26,
+          "oldRef": "v2.4 Q27",
+          "variable": "V_Q26",
+          "text": "For each offering, which ONE pricing scheme would you prefer?",
+          "type": "product_single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Scheme 1 – Pay per use"
+            },
+            {
+              "value": 2,
+              "label": "Scheme 2 – Monthly subscription"
+            },
+            {
+              "value": 3,
+              "label": "Scheme 3 – Hybrid"
+            },
+            {
+              "value": 4,
+              "label": "None of these (would not choose any)"
+            }
+          ],
+          "required": true,
+          "condition": "any_interest",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "interested_S",
+            "B": "interested_B"
+          },
+          "exportFields": [
+            "V_Q26_S",
+            "V_Q26_B"
+          ]
+        },
+        {
+          "id": "Q27",
+          "number": 27,
+          "oldRef": "v2.4 Q28",
+          "variable": "V_Q27",
+          "text": "Why did you choose that scheme? Select all that apply for each offering shown.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Lowest total cost for how much I would ride"
+            },
+            {
+              "value": 2,
+              "label": "Flexibility – only pay when I ride"
+            },
+            {
+              "value": 3,
+              "label": "No commitment"
+            },
+            {
+              "value": 4,
+              "label": "Easy to understand"
+            },
+            {
+              "value": 5,
+              "label": "Predictable monthly cost"
+            },
+            {
+              "value": 6,
+              "label": "Best fit for how often I would ride"
+            },
+            {
+              "value": 7,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q27_Other_txt_S",
+                "B": "V_Q27_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "chose_plan_S || chose_plan_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "chose_plan_S",
+            "B": "chose_plan_B"
+          },
+          "exportFields": [
+            "V_Q27_1_S",
+            "V_Q27_2_S",
+            "V_Q27_3_S",
+            "V_Q27_4_S",
+            "V_Q27_5_S",
+            "V_Q27_6_S",
+            "V_Q27_7_S",
+            "V_Q27_Other_txt_S",
+            "V_Q27_1_B",
+            "V_Q27_2_B",
+            "V_Q27_3_B",
+            "V_Q27_4_B",
+            "V_Q27_5_B",
+            "V_Q27_6_B",
+            "V_Q27_7_B",
+            "V_Q27_Other_txt_B"
+          ]
+        },
+        {
+          "id": "Q28",
+          "number": 28,
+          "oldRef": "v2.4 Q29",
+          "variable": "V_Q28",
+          "text": "Why would you not choose any of the schemes? Select all that apply for each offering shown.",
+          "type": "product_multi",
+          "options": [
+            {
+              "value": 1,
+              "label": "Too expensive overall"
+            },
+            {
+              "value": 2,
+              "label": "I would not ride enough to justify any of them"
+            },
+            {
+              "value": 3,
+              "label": "I would want a different kind of plan (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please describe the kind of plan you would want.",
+              "otherFields": {
+                "S": "V_Q28_DifferentPlan_txt_S",
+                "B": "V_Q28_DifferentPlan_txt_B"
+              }
+            },
+            {
+              "value": 4,
+              "label": "Plans are confusing"
+            },
+            {
+              "value": 5,
+              "label": "I would only use it occasionally and want a free/very cheap option"
+            },
+            {
+              "value": 6,
+              "label": "Other (specify)",
+              "other": true,
+              "otherRequired": true,
+              "otherMaxLength": 40,
+              "otherPrompt": "Please specify.",
+              "otherFields": {
+                "S": "V_Q28_Other_txt_S",
+                "B": "V_Q28_Other_txt_B"
+              }
+            }
+          ],
+          "required": true,
+          "condition": "chose_none_S || chose_none_B",
+          "products": [
+            "S",
+            "B"
+          ],
+          "productConditions": {
+            "S": "chose_none_S",
+            "B": "chose_none_B"
+          },
+          "exportFields": [
+            "V_Q28_1_S",
+            "V_Q28_2_S",
+            "V_Q28_3_S",
+            "V_Q28_4_S",
+            "V_Q28_5_S",
+            "V_Q28_6_S",
+            "V_Q28_DifferentPlan_txt_S",
+            "V_Q28_Other_txt_S",
+            "V_Q28_1_B",
+            "V_Q28_2_B",
+            "V_Q28_3_B",
+            "V_Q28_4_B",
+            "V_Q28_5_B",
+            "V_Q28_6_B",
+            "V_Q28_DifferentPlan_txt_B",
+            "V_Q28_Other_txt_B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "charger",
+      "title": "Section 8 – Charger Program",
+      "description": "BNS also plans to add a separate “charger” version of the app. Students can earn money by charging eZ2 vehicles at charging stations so they are ready for riders.",
+      "questions": [
+        {
+          "id": "Q29",
+          "number": 29,
+          "oldRef": "v2.4 Q22 (moved)",
+          "variable": "V_Q29",
+          "text": "How interested, if at all, would you be in charging shared electric vehicles in exchange for compensation?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 1,
+              "label": "1 = Not at all interested"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5 = Extremely interested"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "min": 1,
+          "max": 5,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q29"
+          ]
+        },
+        {
+          "id": "Q30",
+          "number": 30,
+          "oldRef": "v2.4 Q23 (moved; new ranges; $0 and Not sure yet removed)",
+          "variable": "V_Q30_band",
+          "text": "What is the minimum payment per vehicle charged that would make you consider taking part in the charger program?",
+          "type": "single",
+          "options": [
+            {
+              "value": 1,
+              "label": "Less than $2",
+              "interval": {
+                "lower": 0,
+                "upper": 2,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 2,
+              "label": "$2 to less than $4",
+              "interval": {
+                "lower": 2,
+                "upper": 4,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 3,
+              "label": "$4 to less than $6",
+              "interval": {
+                "lower": 4,
+                "upper": 6,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 4,
+              "label": "$6 to less than $10",
+              "interval": {
+                "lower": 6,
+                "upper": 10,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            },
+            {
+              "value": 5,
+              "label": "$10 or more",
+              "interval": {
+                "lower": 10,
+                "upper": null,
+                "lowerInclusive": true,
+                "upperInclusive": false
+              }
+            }
+          ],
+          "required": true,
+          "condition": "charger_interest",
+          "help": "Charging one vehicle means collecting it, charging it at a charging station, and returning it ready to ride. Choose the range containing the smallest payment you would accept for one vehicle.",
+          "exportFields": [
+            "V_Q30_band"
+          ],
+          "measurement": {
+            "kind": "ordered_category",
+            "unit": "USD_per_vehicle_charged",
+            "coding": "Values are category codes, not measured quantities. Do not calculate means of the codes or silently replace categories with midpoints."
+          }
+        }
+      ]
+    },
+    {
+      "id": "beyond",
+      "title": "Section 9 – Beyond Campus and Final Comment",
+      "description": "BNS hopes to later sell these vehicles to the public.",
+      "questions": [
+        {
+          "id": "Q31",
+          "number": 31,
+          "oldRef": "v2.4 Q31 (now shown to all eligible respondents)",
+          "variable": "V_Q31",
+          "text": "If you could buy (instead of renting) an eZ2 vehicle of your own for use off campus, how likely would you be to buy one?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all likely"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Extremely likely"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q31"
+          ]
+        },
+        {
+          "id": "Q32",
+          "number": 32,
+          "oldRef": "v2.4 Q32 (reworded as 0–10 likelihood to recommend; now shown to all eligible respondents)",
+          "variable": "V_Q32",
+          "text": "How likely are you to recommend eZ2 Wheels to a friend or classmate?",
+          "type": "scale",
+          "options": [
+            {
+              "value": 0,
+              "label": "0 = Not at all likely"
+            },
+            {
+              "value": 1,
+              "label": "1"
+            },
+            {
+              "value": 2,
+              "label": "2"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 4,
+              "label": "4"
+            },
+            {
+              "value": 5,
+              "label": "5"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 7,
+              "label": "7"
+            },
+            {
+              "value": 8,
+              "label": "8"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 10,
+              "label": "10 = Extremely likely"
+            }
+          ],
+          "required": true,
+          "condition": "eligible",
+          "min": 0,
+          "max": 10,
+          "decimals": 0,
+          "exportFields": [
+            "V_Q32"
+          ]
+        },
+        {
+          "id": "Q33",
+          "number": 33,
+          "oldRef": "v2.4 Q33",
+          "variable": "V_Q33",
+          "text": "Anything else you would like to tell BNS?",
+          "type": "text",
+          "options": [],
+          "required": false,
+          "condition": "eligible",
+          "maxLength": 100,
+          "help": "Optional.",
+          "exportFields": [
+            "V_Q33"
+          ]
+        }
+      ]
+    }
+  ]
+};
+/* Pure survey rules shared by the browser, exports and Node tests. No browser APIs. */
+const PRODUCT_NAMES = {S:'Electric scooter (eZ2 S)',B:'Electric bike (eZ2 B)'};
+const allQuestions = schema => schema.sections.flatMap(section => section.questions);
+const keyFor = (q, product) => product ? `${q.id}_${product}` : q.id;
+const otherKey = (key, option) => `${key}__${option.value}_text`;
+const hasValue = value => value !== undefined && value !== null && value !== '';
+const same = (a,b) => String(a) === String(b);
+const isCode = (value, codes) => ['number','string'].includes(typeof value) && codes.some(code=>same(value,code));
+function conditionMet(condition, answers) {
+  if (condition?.includes('||')) return condition.split('||').some(part=>conditionMet(part.trim(),answers));
+  const eligible = isCode(answers.Q1, [1]);
+  const interest = p => isCode(answers[`Q18_${p}`], [2,3,4,5]);
+  if (!condition || condition === 'always') return true;
+  if (condition === 'eligible') return eligible;
+  if (!eligible) return false;
+  if (condition === 'on_campus') return isCode(answers.Q5, [1]);
+  if (condition === 'experienced') return isCode(answers.Q13, [1]);
+  if (condition === 'any_interest') return interest('S') || interest('B');
+  if (condition === 'charger_interest') return isCode(answers.Q29, [2,3,4,5]);
+  const [_, p] = condition.match(/_([SB])$/) || [];
+  if (condition.startsWith('uninterested_')) return isCode(answers[`Q18_${p}`], [1]);
+  if (condition.startsWith('interested_')) return interest(p);
+  if (condition.startsWith('chose_plan_')) return interest(p) && isCode(answers[`Q26_${p}`], [1,2,3]);
+  if (condition.startsWith('chose_none_')) return interest(p) && isCode(answers[`Q26_${p}`], [4]);
+  throw new Error(`Unknown condition: ${condition}`);
+}
+function visibleProducts(q, answers) {
+  return (q.products || ['S','B']).filter(p => conditionMet(q.productConditions?.[p] || q.condition, answers));
+}
+function isVisible(q, answers) {
+  return conditionMet(q.condition, answers) && (!q.type.startsWith('product_') || visibleProducts(q, answers).length > 0);
+}
+function expandedQuestions(schema, answers) {
+  return allQuestions(schema).flatMap(q => {
+    if (!isVisible(q, answers)) return [];
+    return q.type.startsWith('product_')
+      ? visibleProducts(q, answers).map(product => ({q, product, key:keyFor(q, product)}))
+      : [{q, product:null, key:q.id}];
+  });
+}
+function cleanAnswers(schema, answers) {
+  // Iterate until changes to an upstream answer have removed every hidden descendant.
+  let result = {...answers};
+  for (let iteration=0; iteration<4; iteration++) {
+    const cleaned = {};
+    for (const {q,key} of expandedQuestions(schema,result)) {
+      if (Object.prototype.hasOwnProperty.call(result,key)) cleaned[key] = result[key];
+      for (const option of q.options || []) {
+        const selected = Array.isArray(result[key]) ? result[key].some(v => same(v, option.value)) : same(result[key],option.value);
+        const detailKey = otherKey(key,option);
+        if (option.other && selected && Object.prototype.hasOwnProperty.call(result,detailKey)) cleaned[detailKey] = result[detailKey];
+      }
+    }
+    if (JSON.stringify(result) === JSON.stringify(cleaned)) return cleaned;
+    result = cleaned;
+  }
+  return result;
+}
+function validateItem(q,key,answers) {
+  const errors=[];
+  const value=answers[key];
+  const type=q.type.replace('product_','');
+  const empty=!hasValue(value) || (type==='multi' && Array.isArray(value) && value.length===0);
+  if (empty) return q.required ? [{key,message:'Please answer this question.'}] : [];
+  if (type==='single' || type==='multi') {
+    const options=(q.options || []).map(o=>String(o.value));
+    const selected=type==='multi' ? value : [value];
+    if (!Array.isArray(selected) || selected.some(v=>!['number','string'].includes(typeof v)||!options.includes(String(v))) || (type==='multi' && new Set(selected.map(String)).size!==selected.length)) {
+      errors.push({key,message:'Please select a valid answer.'});
+    } else if (type==='multi' && selected.length>1 && selected.some(v=>(q.exclusiveValues || []).some(exclusive=>same(v,exclusive)))) {
+      errors.push({key,message:'The no-travel option must be selected on its own.'});
+    }
+  }
+  if (type==='number' || type==='scale') {
+    const number=typeof value==='number' ? value : Number(String(value).trim());
+    if (!['number','string'].includes(typeof value) || (typeof value==='string' && !/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value.trim())) || !Number.isFinite(number)) errors.push({key,message:'Please enter a valid number.'});
+    else if (q.min!==undefined && number<q.min) errors.push({key,message:`Enter a number of at least ${q.min}.`});
+    else if (q.max!==undefined && number>q.max) errors.push({key,message:`Enter a number no greater than ${q.max}.`});
+    else if ((type==='scale' || q.decimals===0) && !Number.isInteger(number)) errors.push({key,message:'Please enter a whole number.'});
+    else if (q.decimals!==undefined && Math.abs(number*10**q.decimals-Math.round(number*10**q.decimals))>1e-7) errors.push({key,message:`Use no more than ${q.decimals} decimal place${q.decimals===1?'':'s'}.`});
+  }
+  if (type==='text') {
+    if (typeof value!=='string') errors.push({key,message:'Please enter text.'});
+    else if (!value.trim() && q.required) errors.push({key,message:'Please enter an answer.'});
+    else if (q.maxLength && value.length>q.maxLength) errors.push({key,message:`Use ${q.maxLength} characters or fewer.`});
+  }
+  for (const option of q.options || []) {
+    const selected=Array.isArray(value) ? value.some(v=>same(v,option.value)) : same(value,option.value);
+    if (!option.other || !selected) continue;
+    const detailKey=otherKey(key,option), text=answers[detailKey];
+    if (option.otherRequired && (typeof text!=='string' || !text.trim())) errors.push({key:detailKey,message:'Please specify your answer.'});
+    else if (hasValue(text) && (typeof text!=='string' || (option.otherMaxLength && text.length>option.otherMaxLength))) errors.push({key:detailKey,message:`Use ${option.otherMaxLength || 100} characters or fewer.`});
+  }
+  return errors;
+}
+function updateMultiSelection(q,current,optionValue,checked) {
+  const values=Array.isArray(current)?current:[];
+  if (!checked) return values.filter(v=>!same(v,optionValue));
+  const exclusive=q.exclusiveValues || [];
+  if (exclusive.some(v=>same(v,optionValue))) return [optionValue];
+  return [...values.filter(v=>!same(v,optionValue) && !exclusive.some(x=>same(v,x))),optionValue];
+}
+function validateAll(schema,answers) {
+  const cleaned=cleanAnswers(schema,answers);
+  return expandedQuestions(schema,cleaned).flatMap(({q,key})=>validateItem(q,key,cleaned));
+}
+function shuffledPlans(rng=Math.random) {
+  const result=[1,2,3];
+  for (let i=result.length-1;i>0;i--) {const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
+  return result;
+}
+function orderedOptions(q,planOrder) {
+  if (q.id!=='Q26') return q.options || [];
+  const options=q.options || [];
+  return [...planOrder.map(value=>options.find(o=>same(o.value,value))).filter(Boolean),...options.filter(o=>!planOrder.some(v=>same(v,o.value)))];
+}
+function normalizedValue(q,value) {
+  if (!hasValue(value)) return '';
+  // Keep declared NA codes in raw answers, but exclude them from analysis values.
+  if ((q.missingValues || []).some(code => same(code,value))) return '';
+  const type=q.type.replace('product_','');
+  if (type==='number' || type==='scale') return Number(value);
+  if (type==='text') return String(value).trim();
+  if (type==='single') return (q.options || []).find(o=>same(o.value,value))?.value ?? value;
+  return value;
+}
+function makeRecord(schema,input,metadata) {
+  const errors=validateAll(schema,input);
+  if (errors.length) throw new Error(`The response has ${errors.length} unanswered or invalid field(s).`);
+  const answers=cleanAnswers(schema,input), asked={}, flat={};
+  const visible=new Set(expandedQuestions(schema,answers).map(item=>item.key));
+  for (const q of allQuestions(schema)) {
+    const products=q.type.startsWith('product_') ? q.products || ['S','B'] : [null];
+    for (const product of products) {
+      const key=keyFor(q,product), wasAsked=visible.has(key), suffix=product?`_${product}`:'', base=q.variable || `V_${q.id}`;
+      asked[key]=wasAsked;
+      const type=q.type.replace('product_',''), value=answers[key];
+      if (type==='multi') {
+        for (const option of q.options || []) {
+          const field=`${base}_${option.value}${suffix}`;
+          flat[field]=wasAsked && hasValue(value) ? (value.some(v=>same(v,option.value))?1:0) : '';
+          flat[`${field}__asked`]=wasAsked?1:0;
+        }
+      } else {
+        const field=`${base}${suffix}`;
+        flat[field]=wasAsked?normalizedValue(q,value):'';
+        flat[`${field}__asked`]=wasAsked?1:0;
+      }
+      for (const option of q.options || []) {
+        if (!option.other) continue;
+        const field=product ? option.otherFields?.[product] : option.otherField;
+        const name=field || `${base}_Other_txt${suffix}`;
+        const selected=wasAsked && (Array.isArray(value)?value.some(v=>same(v,option.value)):same(value,option.value));
+        flat[name]=selected?String(answers[otherKey(key,option)] || '').trim():'';
+        flat[`${name}__asked`]=selected?1:0;
+        asked[otherKey(key,option)]=selected;
+      }
+    }
+  }
+  return {schemaVersion:schema.version,surveyTitle:schema.title,responseId:metadata.responseId,startedAt:metadata.startedAt,completedAt:metadata.completedAt,planOrder:metadata.planOrder,answers,asked,flat};
+}
+function csvCell(value) {
+  let text=value===null || value===undefined?'':String(value);
+  // Preserve numeric values while preventing spreadsheet formula execution in text.
+  if (typeof value==='string' && /^[=+\-@\t\r]/.test(text)) text=`'${text}`;
+  return /[",\r\n]/.test(text)?`"${text.replaceAll('"','""')}"`:text;
+}
+function recordsToCsv(records) {
+  if (!records.length) return '';
+  if (new Set(records.map(record=>record.schemaVersion)).size!==1) throw new Error('Do not combine different survey versions in one CSV export.');
+  const fields=[...new Set(records.flatMap(record=>Object.keys(record.flat)))];
+  const meta=['response_id','schema_version','started_at','completed_at','plan_order'];
+  const lines=[[...meta,...fields].map(csvCell).join(',')];
+  for (const r of records) lines.push([r.responseId,r.schemaVersion,r.startedAt,r.completedAt,(r.planOrder||[]).join('|'),...fields.map(field=>r.flat[field]??'')].map(csvCell).join(','));
+  return '\uFEFF'+lines.join('\r\n')+'\r\n';
+}
+function verifyImportedRecord(schema,record) {
+  if (!record || record.schemaVersion!==schema.version) throw new Error('Survey version does not match.');
+  if (typeof record.responseId!=='string' || !/^[a-zA-Z0-9-]{8,80}$/.test(record.responseId)) throw new Error('Missing or invalid response ID.');
+  if (!record.answers || typeof record.answers!=='object' || Array.isArray(record.answers)) throw new Error('Missing response answers.');
+  if (!same(record.answers.Q1,1)) throw new Error('This is not an eligible completed response.');
+  if (!Array.isArray(record.planOrder) || record.planOrder.map(Number).sort().join(',')!=='1,2,3') throw new Error('Invalid plan order.');
+  if (!Number.isFinite(Date.parse(record.startedAt)) || !Number.isFinite(Date.parse(record.completedAt))) throw new Error('Invalid response dates.');
+  // Recompute all export data; imported flat/asked values are not trusted.
+  return makeRecord(schema,record.answers,record);
+}
+
+return Object.freeze({schema:SURVEY_SCHEMA,cleanAnswers:cleanAnswers,validateAll:validateAll,makeRecord:makeRecord});
 })()
 });
 const LEGACY_UNIFIED_HEADERS_=Object.freeze([
@@ -10303,12 +12263,12 @@ function headerMatches_(sheet,headers) {
   return !!sheet&&sheet.getLastRow()>=1&&sheet.getLastColumn()===headers.length&&
     JSON.stringify(sheet.getRange(1,1,1,headers.length).getDisplayValues()[0])===JSON.stringify(headers);
 }
-function storedFieldName_(version,field){return ['3.1','3.2'].includes(version)?'v3_1__'+field:field;}
+function storedFieldName_(version,field){return ['3.1','3.2','3.3'].includes(version)?'v3_1__'+field:field;}
 function unionFlat_(record) {
   const result={};
   UNIFIED_HEADERS_.slice(7).forEach(function(key){result[key]=key.endsWith('__asked')?0:'';});
   // Raw answers and record.flat remain schema-native. Only storage projection
-  // shares the 3.1 namespace with 3.2; survey_version retains each routing contract.
+  // shares the 3.1 namespace with 3.2 and 3.3; survey_version retains each routing contract.
   Object.keys(record.flat).forEach(function(field){
     const physical=storedFieldName_(record.schemaVersion,field);
     if(!Object.prototype.hasOwnProperty.call(result,physical))throw new Error('Missing physical export column.');
@@ -10337,7 +12297,7 @@ function setupSurveySheet() {
     const sheet=SpreadsheetApp.openById(config.spreadsheetId).getSheetByName('Responses');
     if(!sheet)throw new Error('The unified Responses table is missing.');
     checkHeaders_(sheet,backendHeaders_());
-    console.log('Unified Responses verified. Columns: '+UNIFIED_HEADERS_.length+'. Versions: 2.2, 2.3, 2.4, 3.1, 3.2. No cells changed.');
+    console.log('Unified Responses verified. Columns: '+UNIFIED_HEADERS_.length+'. Versions: 2.2, 2.3, 2.4, 3.1, 3.2, 3.3. No cells changed.');
     return {columns:UNIFIED_HEADERS_.length,mutated:false};
   }finally{lock.releaseLock();}
 }
@@ -10395,7 +12355,7 @@ function writeUpgradeExtras_(sheet,startRow,rows) {
   const rich=rows.map(function(row){return row.map(function(value){return SpreadsheetApp.newRichTextValue().setText(value).build();});});
   sheet.getRange(startRow,LEGACY_UNIFIED_HEADERS_.length+1,rich.length,UNIFIED_HEADERS_.length-LEGACY_UNIFIED_HEADERS_.length).setRichTextValues(rich);
 }
-// Historical 217-to-413 recovery remains supported. 3.2 adds no columns.
+// Historical 217-to-413 recovery remains supported. 3.2 and 3.3 add no columns.
 // On an existing 413-column table this helper is read-only. Columns 1-217 are a
 // verification read; no path writes, clears, moves or reinterprets those cells.
 function upgradeUnifiedHeaders() {
@@ -10417,7 +12377,7 @@ function upgradeUnifiedHeaders() {
         if(extra.some(function(cell){return cell!=='';}))throw new Error('An empty response row has unexpected new-column data.');
         desired.push(emptyExtra.slice());continue;
       }
-      if(['3.1','3.2'].includes(row[2])&&alreadyComplete){desired.push(extra.slice());continue;}
+      if(['3.1','3.2','3.3'].includes(row[2])&&alreadyComplete){desired.push(extra.slice());continue;}
       if(!row[0]||!['2.2','2.3','2.4'].includes(row[2]))throw new Error('Unexpected historical response version or identity.');
       historicalRows++;
       for(let cell=0;cell<extra.length;cell++){
