@@ -13,6 +13,7 @@ export function conditionMet(condition, answers) {
   if (!condition || condition === 'always') return true;
   if (condition === 'eligible') return eligible;
   if (!eligible) return false;
+  if (condition === 'on_campus') return isCode(answers.Q5, [1]);
   if (condition === 'experienced') return isCode(answers.Q13, [1]);
   if (condition === 'any_interest') return interest('S') || interest('B');
   if (condition === 'charger_interest') return isCode(answers.Q29, [2,3,4,5]);

@@ -10,14 +10,18 @@ for(const version of ['2.2','2.3']){
  vm.runInContext(text,c);oracles[version]=c;oracleSources[version]=text;
 }
 const previous24=fs.readFileSync(path.join(root,'testing/fixtures/original-2.4.gs.txt'),'utf8');
-oracles['2.4']=vm.createContext({});vm.runInContext(previous24,oracles['2.4']);oracleSources['2.4']=previous24;
-const rules24=vm.createContext({});vm.runInContext(previous24.split('"2.4":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0],rules24);
+const previous31=fs.readFileSync(path.join(root,'testing/fixtures/original-3.1.gs.txt'),'utf8');
+const frozenRules={};
+for(const [version,text] of [['2.4',previous24],['3.1',previous31]]){
+ oracles[version]=vm.createContext({});vm.runInContext(text,oracles[version]);oracleSources[version]=text;
+ frozenRules[version]=vm.createContext({});vm.runInContext(text.split('"'+version+'":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0],frozenRules[version]);
+}
 const currentSchema=JSON.parse(fs.readFileSync(path.join(site,'survey.json'),'utf8'));
 const frontend=fs.readFileSync(path.join(site,'logic.mjs'),'utf8').replace(/^export /gm,'');
-oracles['3.1']=vm.createContext({});vm.runInContext('const SURVEY_SCHEMA='+JSON.stringify(currentSchema)+';\n'+frontend,oracles['3.1']);
-const schemaFor=v=>v==='2.4'?clone(oracles[v].engineForVersion_(v).schema):JSON.parse(vm.runInContext('JSON.stringify(SURVEY_SCHEMA)',oracles[v]));
-const rulesFor=v=>v==='2.4'?rules24:oracles[v];
-const expectedRecord=p=>p.schemaVersion==='3.1'?oracles['3.1'].makeRecord(currentSchema,p.answers,{...p,planOrder:p.planOrder.map(String)}):oracles[p.schemaVersion].canonicalRecord_(p);
+oracles['3.2']=vm.createContext({});vm.runInContext('const SURVEY_SCHEMA='+JSON.stringify(currentSchema)+';\n'+frontend,oracles['3.2']);
+const schemaFor=v=>['2.4','3.1'].includes(v)?clone(oracles[v].engineForVersion_(v).schema):JSON.parse(vm.runInContext('JSON.stringify(SURVEY_SCHEMA)',oracles[v]));
+const rulesFor=v=>frozenRules[v]||oracles[v];
+const expectedRecord=p=>p.schemaVersion==='3.2'?oracles['3.2'].makeRecord(currentSchema,p.answers,{...p,planOrder:p.planOrder.map(String)}):oracles[p.schemaVersion].canonicalRecord_(p);
 const priorWidth=217,totalWidth=headers.length,extraWidth=totalWidth-priorWidth,firstNew='v3_1__V_Q1';
 let counter=100;
 function packet(version,overrides={}){
@@ -32,7 +36,7 @@ function packet(version,overrides={}){
 function digest(r){return sha(JSON.stringify({version:r.schemaVersion,answers:r.answers,planOrder:r.planOrder}));}
 function rowFor(p,width=priorWidth){
  const r=expectedRecord(p),fields={submission_id:r.responseId,received_at_utc:'2026-10-23T17:00:00.000Z',survey_version:r.schemaVersion,started_at_utc:r.startedAt,completed_at_utc:r.completedAt,plan_order:r.planOrder.join('|'),payload_sha256:digest(r)};
- for(const [key,value] of Object.entries(r.flat))fields[p.schemaVersion==='3.1'?'v3_1__'+key:key]=value;
+ for(const [key,value] of Object.entries(r.flat))fields[['3.1','3.2'].includes(p.schemaVersion)?'v3_1__'+key:key]=value;
  return (width===priorWidth?previousHeaders:headers).map(f=>{
   const value=Object.hasOwn(fields,f)?fields[f]:f.endsWith('__asked')?0:'';
   return typeof value==='string'&&/^[=+\-@\t\r]/.test(value)?"'"+value:String(value??'');
@@ -93,30 +97,31 @@ test('413 headers preserve the entire frozen 217 prefix and append all 3.1 field
  assert.equal(fields.length,98);assert.deepEqual(headers.slice(priorWidth),fields.flatMap(f=>['v3_1__'+f,'v3_1__'+f+'__asked']));
  assert.deepEqual(previousHeaders,clone(oracles['2.4'].backendHeaders_()));assert.equal(harness().ctx.sourceHeaders_('3.1').length,203);
 });
-test('all 2.2, 2.3 and 2.4 engine source is frozen exactly, including functions not exported from the IIFE',()=>{
+test('all 2.2, 2.3, 2.4 and 3.1 engine source is frozen exactly, including functions not exported from the IIFE',()=>{
  const normalize=s=>s.replace(/\r\n/g,'\n').trim();
- for(const version of ['2.2','2.3','2.4']){
+ for(const version of ['2.2','2.3','2.4','3.1']){
   const embedded=source.split('"'+version+'":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
-  const oracle=version==='2.4'?previous24.split('"2.4":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0]:oracleSources[version].split('/* Google Sheets receiver')[0];
+  const oracle=['2.4','3.1'].includes(version)?oracleSources[version].split('"'+version+'":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0]:oracleSources[version].split('/* Google Sheets receiver')[0];
   assert.equal(normalize(embedded),normalize(oracle));
  }
  assert.equal(sha(previous24),'d849cd5c4e7a5f65b587f5e76f68263d1a42d9fb2a81def87ef4d3bbf92a4811');
 });
-test('all four versions preserve canonical answers and digest over 288 meaningful route combinations',()=>{
- const h=harness();
- for(const version of ['2.2','2.3','2.4','3.1'])for(const S of [1,2,5])for(const B of [1,2,5])for(const experience of [false,true])for(const charge of [1,5]){
-  const overrides=version==='3.1'?{Q18_S:S,Q18_B:B,Q13:experience?1:0,Q29:charge,Q26_S:1,Q26_B:4,Q15:[4],Q15__4_text:'source',Q28_B:[3],Q28_B__3_text:'weekly'}:
+test('all five versions preserve canonical answers and digest over 180 meaningful route combinations',()=>{
+ const h=harness();let checked=0;
+ for(const version of ['2.2','2.3','2.4','3.1','3.2'])for(const S of [1,2,5])for(const B of [1,2,5])for(const experience of [false,true])for(const charge of [1,5]){
+  const overrides=['3.1','3.2'].includes(version)?{Q18_S:S,Q18_B:B,Q13:experience?1:0,Q29:charge,Q26_S:1,Q26_B:4,Q15:[4],Q15__4_text:'source',Q28_B:[3],Q28_B__3_text:'weekly'}:
    {Q16_S:S,Q16_B:B,Q12:experience?2:1,Q22:charge,Q27_S:1,Q27_B:4,Q13:[4],Q13__4_text:'source',Q29_B:[3],Q29_B__3_text:'weekly'};
   const p=packet(version,overrides),actual=h.ctx.canonicalRecord_(p),expected=expectedRecord(p);
-  assert.deepEqual(clone(actual),clone(expected));assert.equal(digest(actual),digest(expected));
+  assert.deepEqual(clone(actual),clone(expected));assert.equal(digest(actual),digest(expected));checked++;
  }
+ assert.equal(checked,180);
 });
 test('same names never mix meanings: all 210 old value/asked cells are absent for 3.1, all 196 new cells absent for old versions',()=>{
  const h=harness();
- for(const [row,version] of ['2.2','2.3','2.4','3.1'].entries()){
+ for(const [row,version] of ['2.2','2.3','2.4','3.1','3.2'].entries()){
   const p=packet(version);assert.match(h.submit(p),/has been saved/);const actual=h.sheets.Responses.data[row+1],expected=rowFor(p,totalWidth);
   for(let col=0;col<totalWidth;col++)if(col!==1)assert.equal(actual[col],expected[col],version+' '+headers[col]);
-  const unrelated=version==='3.1'?headers.slice(7,priorWidth):headers.slice(priorWidth);
+  const unrelated=['3.1','3.2'].includes(version)?headers.slice(7,priorWidth):headers.slice(priorWidth);
   for(const field of unrelated)assert.equal(h.cell(field,row+1),field.endsWith('__asked')?'0':'',version+' '+field);
  }
  assert.equal(h.cell('V_Q24_S',1),'0.5');assert.equal(h.cell('V_Q24_band_S',2),'0');
@@ -179,7 +184,7 @@ test('legacy 2.4 exclusive None and Q14 unknown retain their old semantics',()=>
  assert.match(h.submit(packet('3.1',{Q8:[9]})),/could not be saved/);assert.match(h.submit(packet('3.1',{Q14:99})),/could not be saved/);
 });
 test('unsupported versions and prototype names reject before storage',()=>{
- const h=harness();for(const version of ['2.0','2.1','3.0','3.2','__proto__','constructor','toString',3.1,null]){const p=packet('3.1');p.schemaVersion=version;assert.match(h.submit(p),/version is no longer accepted/);}
+ const h=harness();for(const version of ['2.0','2.1','3.0','3.3','__proto__','constructor','toString',3.1,null]){const p=packet('3.1');p.schemaVersion=version;assert.match(h.submit(p),/version is no longer accepted/);}
  assert.equal(h.state.writes.length,0);
 });
 
@@ -195,7 +200,7 @@ test('before upgrade all three previous versions write exactly 217 columns and 3
 });
 test('malformed or missing unified headers never divert submissions into any other table',()=>{
  for(const alteration of [h=>h.sheets.Responses.data[0][0]='wrong',h=>h.sheets.Responses.data[0][217]='unknown',h=>{h.sheets.Responses.maxColumns=totalWidth+1;h.sheets.Responses.data[0][totalWidth]='unexpected';},h=>delete h.sheets.Responses]){
-  const h=harness();alteration(h);for(const v of ['2.2','2.3','2.4','3.1'])assert.match(h.submit(packet(v)),/could not be saved/);assert.equal(h.state.writes.length,0);
+  const h=harness();alteration(h);for(const v of ['2.2','2.3','2.4','3.1','3.2'])assert.match(h.submit(packet(v)),/could not be saved/);assert.equal(h.state.writes.length,0);
  }
 });
 test('append-only upgrade preserves every old cell including digest/formula text and blank row gaps',()=>{
@@ -272,7 +277,7 @@ test('submission write/flush failures never fake success and retries are safe',(
 test('formula safety, privacy, malformed payload rejection, and trusted return links remain intact',()=>{
  const h=harness(),p=packet('3.1',{Q33:'=IMPORTDATA("private")'});assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('v3_1__V_Q33'),"'=IMPORTDATA(\"private\")");
  const get=h.ctx.doGet().html;assert.ok(!get.includes('IMPORTDATA'));assert.ok(!get.includes(h.props.SPREADSHEET_ID));
- for(const version of ['2.2','2.3','2.4','3.1'])for(const patch of [{Q1:0},{UNAUTHORIZED:'x'},{Q2:{}},{Q24_S:[1]},{Q20_S:''}])assert.match(h.submit(packet(version,patch)),/could not be saved/);
+ for(const version of ['2.2','2.3','2.4','3.1','3.2'])for(const patch of [{Q1:0},{UNAUTHORIZED:'x'},{Q2:{}},{Q24_S:[1]},{Q20_S:''}])assert.match(h.submit(packet(version,patch)),/could not be saved/);
  const attacker=packet('3.1');attacker.returnUrl='https://attacker.invalid';const html=h.submit(attacker);assert.match(html,/unsupported fields/);assert.ok(!html.includes('attacker.invalid'));assert.ok(!h.state.logs.some(s=>s.includes('IMPORTDATA')));
 });
 test('the release has exactly one deployable Apps Script source file',()=>{
@@ -344,4 +349,107 @@ test('screenshot backend 8: per-product price definitions and stable plan codes/
   assert.deepEqual(clone(r.planOrder),order.map(String));assert.equal(r.flat.V_Q26_S,2);assert.equal(r.flat.V_Q26_B,4);assert.match(h.submit(p),/has been saved/);
  }
  const bad=packet('3.1');bad.planOrder=[1,2,4];assert.match(h.submit(bad),/display order is invalid/);
+});
+
+test('3.2 preserves all 413 physical headers exactly and shares only the existing 3.1 namespace',()=>{
+ assert.equal(sha(previous31),'686437dd3502f736606aab24fe4b2ebd43115f1e4b249e34829768938f7ee074');
+ assert.deepEqual(headers,JSON.parse(fs.readFileSync(path.join(root,'testing/fixtures/previous-release-headers.json'),'utf8')));
+ assert.deepEqual(headers,clone(oracles['3.1'].backendHeaders_()));
+ const h=harness();assert.deepEqual(clone(h.ctx.sourceHeaders_('3.2')),clone(h.ctx.sourceHeaders_('3.1')));
+ assert.deepEqual(clone(h.ctx.engineForVersion_('3.2').schema),currentSchema);
+ for(const field of headers.slice(217)){assert.ok(field.startsWith('v3_1__'));assert.ok(!field.startsWith('v3_2__'));}
+ for(const v of ['3.1','3.2'])assert.equal(h.ctx.storedFieldName_(v,'V_Q6'),'v3_1__V_Q6');
+});
+
+test('3.2 Q6 is required only for eligible on-campus residents and stale off-campus answers are removed',()=>{
+ const h=harness();
+ for(const residence of [1,'1'])for(const distance of [1,2,3,4,5,'1','5']){
+  const r=h.ctx.canonicalRecord_(packet('3.2',{Q5:residence,Q6:distance}));
+  assert.equal(r.asked.Q6,true);assert.equal(r.flat.V_Q6,Number(distance));assert.equal(r.flat.V_Q6__asked,1);
+ }
+ for(const residence of [2,3,'2','3'])for(const stale of [99,5,'1']){
+  const p=packet('3.2',{Q5:residence,Q6:stale}),r=h.ctx.canonicalRecord_(p);
+  assert.equal(r.asked.Q6,false);assert.equal(r.answers.Q6,undefined);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,0);
+  assert.match(h.submit(p),/has been saved/);
+ }
+ for(const invalid of [0,6,99,'99',1.5,'',null])assert.match(h.submit(packet('3.2',{Q5:1,Q6:invalid})),/could not be saved/);
+ const missing=packet('3.2',{Q5:1});delete missing.answers.Q6;assert.match(h.submit(missing),/Q6/);
+});
+
+test('3.2 on-campus routing rejects malformed residence codes instead of making new distance obligations',()=>{
+ const h=harness();
+ for(const Q5 of [0,4,99,'',null,true,[1],{}]){
+  const p=packet('3.2',{Q5,Q6:1});assert.match(h.submit(p),/could not be saved/);
+ }
+ assert.equal(h.state.writes.length,0);
+ for(const Q1 of [0,'0']){
+  const p=packet('3.2',{Q1,Q5:1,Q6:5});assert.match(h.submit(p),/could not be saved/);
+  const engine=h.ctx.engineForVersion_('3.2');assert.deepEqual(clone(engine.cleanAnswers(engine.schema,p.answers)),{Q1});
+ }
+});
+
+test('3.1 Q6 remains all-eligible with NA99 while 3.2 on-campus Q6 rejects NA99',()=>{
+ const h=harness();
+ const old=h.ctx.canonicalRecord_(packet('3.1',{Q5:2,Q6:99}));
+ assert.equal(old.answers.Q6,99);assert.equal(old.asked.Q6,true);assert.equal(old.flat.V_Q6,'');assert.equal(old.flat.V_Q6__asked,1);
+ const current=h.ctx.canonicalRecord_(packet('3.2',{Q5:2,Q6:99}));
+ assert.equal(current.answers.Q6,undefined);assert.equal(current.asked.Q6,false);assert.equal(current.flat.V_Q6,'');assert.equal(current.flat.V_Q6__asked,0);
+ assert.match(h.submit(packet('3.1',{Q5:1,Q6:99})),/has been saved/);
+ assert.match(h.submit(packet('3.2',{Q5:1,Q6:99})),/could not be saved/);
+});
+
+test('3.2 Q31 remains required for both-uninterested respondents while Q32 and pricing remain hidden',()=>{
+ const h=harness();
+ for(const value of [0,1,10,'0','10']){
+  const p=packet('3.2',{Q18_S:1,Q18_B:1,Q31:value,Q32:1,Q24:0,Q26_S:4,Q26_B:4}),r=h.ctx.canonicalRecord_(p);
+  assert.equal(r.asked.Q31,true);assert.equal(r.flat.V_Q31,Number(value));assert.equal(r.flat.V_Q31__asked,1);
+  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q27_B','Q28_S','Q28_B','Q32']){assert.equal(r.asked[key],false);assert.equal(r.answers[key],undefined);}
+  assert.match(h.submit(p),/has been saved/);
+ }
+ for(const invalid of ['',null,-1,11,0.5,99])assert.match(h.submit(packet('3.2',{Q18_S:1,Q18_B:1,Q31:invalid})),/could not be saved/);
+ const missing=packet('3.2',{Q18_S:1,Q18_B:1});delete missing.answers.Q31;assert.match(h.submit(missing),/Q31/);
+ const old=h.ctx.canonicalRecord_(packet('3.1',{Q18_S:1,Q18_B:1,Q31:10}));assert.equal(old.asked.Q31,false);assert.equal(old.answers.Q31,undefined);
+});
+
+test('3.2 108 residence/product/experience/charger route cases retain independent Q6 and Q31 behavior',()=>{
+ const h=harness();let cases=0;
+ for(const Q5 of [1,2,3])for(const S of [1,2,5])for(const B of [1,2,5])for(const Q13 of [0,1])for(const Q29 of [1,5]){
+  const p=packet('3.2',{Q5,Q6:3,Q18_S:S,Q18_B:B,Q13,Q29,Q31:0}),r=h.ctx.canonicalRecord_(p);
+  assert.deepEqual(clone(r),clone(expectedRecord(p)));assert.equal(r.asked.Q6,Q5===1);assert.equal(r.asked.Q31,true);assert.equal(r.flat.V_Q31,0);
+  assert.equal(r.asked.Q14,Q13===1);assert.equal(r.asked.Q30,Q29===5);assert.equal(r.asked.Q32,S!==1||B!==1);
+  assert.equal(r.asked.Q19_S,S===1);assert.equal(r.asked.Q19_B,B===1);cases++;
+ }
+ assert.equal(cases,108);
+});
+
+test('setup and repeated upgrade are read-only for the live 413 layout with both 3.1 and 3.2 rows',()=>{
+ const rows=['2.2','2.3','2.4','3.1','3.2'].map(v=>rowFor(packet(v),totalWidth)),h=harness({rows}),before=clone(h.sheets.Responses.data);
+ for(let attempt=0;attempt<2;attempt++){
+  assert.equal(h.ctx.setupSurveySheet().mutated,false);assert.equal(h.ctx.upgradeUnifiedHeaders().alreadyComplete,true);
+ }
+ assert.deepEqual(h.sheets.Responses.data,before);assert.equal(h.state.writes.length,0);assert.equal(h.state.expansions.length,0);assert.equal(h.state.locked,false);
+});
+
+test('3.2 is refused on incomplete 217-column headers but works after safe historical recovery',()=>{
+ const h=harness({upgraded:false,rows:[rowFor(packet('2.4'))]}),p=packet('3.2'),before=originalPrefix(h);
+ assert.match(h.submit(p),/not ready/);assert.deepEqual(originalPrefix(h),before);assert.equal(h.state.writes.length,0);
+ h.state.partialHeaderFailure=true;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.match(h.submit(p),/not ready/);
+ h.state.partialHeaderFailure=false;h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),before);assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('survey_version',2),'3.2');
+});
+
+test('3.1 and 3.2 are distinguishable by source version and digest despite shared physical columns',()=>{
+ const h=harness(),old=packet('3.1',{Q5:1,Q6:1,Q18_S:5,Q18_B:5}),current=clone(old);current.schemaVersion='3.2';
+ const a=h.ctx.canonicalRecord_(old),b=h.ctx.canonicalRecord_(current);
+ assert.deepEqual(clone(a.answers),clone(b.answers));assert.notEqual(digest(a),digest(b));
+ assert.match(h.submit(old),/has been saved/);const before=clone(h.sheets.Responses.data);assert.match(h.submit(current),/different answers/);assert.deepEqual(h.sheets.Responses.data,before);
+ current.responseId=packet('3.2').responseId;assert.match(h.submit(current),/has been saved/);assert.equal(h.cell('survey_version',1),'3.1');assert.equal(h.cell('survey_version',2),'3.2');
+ assert.equal(h.cell('v3_1__V_Q6',1),'1');assert.equal(h.cell('v3_1__V_Q6',2),'1');
+});
+
+test('3.2 receipt, duplicate, write-failure retry and formula-safe Other use the actual receiver',()=>{
+ const h=harness(),p=packet('3.2',{Q5:2,Q6:99,Q3:8,Q3__8_text:'=private',Q18_S:1,Q18_B:1,Q31:0});
+ h.state.failWrite=true;assert.match(h.submit(p),/could not be saved/);assert.equal(h.state.writes.length,0);
+ h.state.failWrite=false;const html=h.submit(p);assert.match(html,/has been saved/);assert.ok(html.includes(p.responseId));
+ assert.equal(h.cell('v3_1__V_Q3_Other_txt'),"'=private");assert.equal(h.cell('v3_1__V_Q6'),'');assert.equal(h.cell('v3_1__V_Q6__asked'),'0');assert.equal(h.cell('v3_1__V_Q31'),'0');assert.equal(h.cell('v3_1__V_Q31__asked'),'1');
+ const before=clone(h.sheets.Responses.data);assert.match(h.submit(p),/already received/);assert.deepEqual(h.sheets.Responses.data,before);assert.ok(!h.ctx.doGet().html.includes('private'));
 });

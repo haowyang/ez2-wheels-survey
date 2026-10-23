@@ -2,13 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {createHash} from 'node:crypto';
 import {schema,questions,question,metadata,filled} from './helpers.mjs';
 import {allQuestions,expandedQuestions,validateItem,validateAll,makeRecord,verifyImportedRecord,otherKey} from '../logic.mjs';
-const upload=JSON.parse(await readFile(new URL('./fixtures/uploaded-v3.1.json',import.meta.url),'utf8'));
+const uploadBytes=await readFile(new URL('./fixtures/uploaded-v3.2.json',import.meta.url));
+const upload=JSON.parse(uploadBytes.toString('utf8'));
 
-test('the complete 3.1 upload is preserved except the two approved analytical metadata corrections',()=>{
+test('the immutable latest upload is preserved except release version and two retained analytical metadata corrections',()=>{
   const actual=structuredClone(schema),expected=structuredClone(upload);
-  assert.equal(actual.version,'3.1');
+  assert.equal(actual.version,'3.2');
+  assert.equal(createHash('sha256').update(uploadBytes).digest('hex'),'94e78fbf14df4763f8955e1ff42bc8fd8bfbbae6119d6f1bdd62d145cb3e5f50');
+  actual.version=expected.version;
   const a=allQuestions(actual),e=allQuestions(expected);
   const q24=a.find(q=>q.id==='Q24'),original24=e.find(q=>q.id==='Q24');
   assert.notEqual(q24.measurement.coding,original24.measurement.coding);
@@ -18,6 +22,18 @@ test('the complete 3.1 upload is preserved except the two approved analytical me
   const q30=a.find(q=>q.id==='Q30');assert.equal(q30.options[0].interval.lowerInclusive,true);
   q30.options[0].interval.lowerInclusive=e.find(q=>q.id==='Q30').options[0].interval.lowerInclusive;
   assert.deepEqual(actual,expected,'No displayed question, option, price, description, condition or other metadata may drift');
+});
+
+test('the latest upload changes only the stated Q5/Q6 routing and Q31 audience relative to the original 3.1 upload',async()=>{
+  const previous=JSON.parse(await readFile(new URL('./fixtures/uploaded-v3.1.json',import.meta.url),'utf8'));
+  const actual=structuredClone(upload),before=allQuestions(previous),after=allQuestions(actual);
+  assert.equal(actual.conditionDefinitions.on_campus,'V_Q1 = 1 and V_Q5 = 1');delete actual.conditionDefinitions.on_campus;
+  const allowed={Q5:['oldRef'],Q6:['oldRef','text','condition','options','missingValues'],Q31:['oldRef','condition']};
+  for(const q of after){
+    const old=before.find(item=>item.id===q.id);
+    for(const key of allowed[q.id]||[]){if(Object.hasOwn(old,key))q[key]=structuredClone(old[key]);else delete q[key];}
+  }
+  assert.deepEqual(actual,previous,'All remaining content, prices, scales, field names and conditions must stay unchanged');
 });
 
 test('all 33 question numbers, variables, options, condition names and 98 exports are internally complete',()=>{
@@ -96,10 +112,12 @@ for(const [id,unit] of [['Q12','USD_per_month'],['Q24','minutes_per_week'],['Q25
   for(const key of ['min','max','decimals'])assert.equal(q[key],undefined);
 });
 
-test('protected Q6 has exact source options and routing; deliberate omissions are not silently restored',()=>{
+test('Q6 has exact latest source options and on-campus routing; deliberate omissions are not restored',()=>{
   assert.deepEqual(question('Q6'),allQuestions(upload).find(q=>q.id==='Q6'));
-  assert.deepEqual(question('Q6').options.map(o=>o.value),[1,2,3,4,5,99]);assert.equal(question('Q6').condition,'eligible');
-  for(const living of [1,2,3])for(const distance of [1,5,99])assert.deepEqual(validateAll(schema,filled({Q5:living,Q6:distance})),[]);
+  assert.deepEqual(question('Q6').options.map(o=>o.value),[1,2,3,4,5]);assert.equal(question('Q6').condition,'on_campus');
+  assert.equal(question('Q6').missingValues,undefined);
+  assert.ok(validateItem(question('Q6'),'Q6',{Q6:99}).length);
+  for(const living of [1,2,3])for(const distance of [1,5])assert.deepEqual(validateAll(schema,filled({Q5:living,Q6:distance})),[]);
   assert.equal(question('Q8').options.some(o=>o.value===9),false);assert.equal(question('Q8').exclusiveValues,undefined);
   assert.deepEqual(question('Q16').options.map(o=>o.value),[1,2,3,4,5]);assert.equal(question('Q16').missingValues,undefined);
   for(const id of ['Q12','Q24','Q25','Q30'])assert.equal(question(id).options.some(o=>o.value===99),false,id);
@@ -109,24 +127,24 @@ const gs=await readFile(new URL('../google-sheets/UnifiedCollector.gs',import.me
 const frontend=await readFile(new URL('../logic.mjs',import.meta.url),'utf8');
 const headersFile=JSON.parse(await readFile(new URL('../google-sheets/headers.json',import.meta.url),'utf8'));
 const server=vm.createContext({});vm.runInContext(gs,server);const plain=v=>JSON.parse(JSON.stringify(v));
-test('3.1 frontend matches its collector engine and all new values occupy a namespaced 196-column suffix',()=>{
-  assert.deepEqual(plain(server.engineForVersion_('3.1').schema),schema);
+test('3.2 frontend matches its collector engine and shares the existing 196-column v3_1 suffix',()=>{
+  assert.deepEqual(plain(server.engineForVersion_('3.2').schema),schema);
   const normalize=s=>s.replace(/\r\n/g,'\n').replace(/^export /gm,'').replaceAll('Object.hasOwn(', 'Object.prototype.hasOwnProperty.call(').trim();
-  const source=gs.split('"3.1":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
+  const source=gs.split('"3.2":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
   assert.ok(normalize(source).endsWith(normalize(frontend)),'complete shared logic must be identical');
   const headers=plain(server.backendHeaders_());assert.equal(headers.length,413);assert.equal(new Set(headers).size,413);assert.deepEqual(headers,headersFile);
   assert.deepEqual(headers.slice(217),questions.flatMap(q=>q.exportFields).flatMap(f=>['v3_1__'+f,'v3_1__'+f+'__asked']));
-  for(const version of ['2.2','2.3','2.4'])assert.equal(server.engineForVersion_(version).schema.version,version);
+  for(const version of ['2.2','2.3','2.4','3.1'])assert.equal(server.engineForVersion_(version).schema.version,version);
 });
 
 test('frontend and collector recompute identical raw, normalized and asked data over all eight key paths',()=>{
-  for(const overrides of [{},{Q13:0},{Q18_S:1},{Q18_B:1},{Q18_S:1,Q18_B:1},{Q26_S:4,Q26_B:4},{Q29:1},{Q3:8,Q3__8_text:'Other study',Q8:[8],Q8__8_text:'Other mode',Q6:99}]){
+  for(const overrides of [{},{Q13:0},{Q18_S:1},{Q18_B:1},{Q18_S:1,Q18_B:1},{Q26_S:4,Q26_B:4},{Q29:1},{Q3:8,Q3__8_text:'Other study',Q8:[8],Q8__8_text:'Other mode',Q5:2,Q6:99}]){
     const browser=makeRecord(schema,filled(overrides),metadata),backend=plain(server.canonicalRecord_({...browser,flat:{V_Q1:0},asked:{Q1:false}}));
     assert.deepEqual(backend.answers,browser.answers);assert.deepEqual(backend.asked,browser.asked);assert.deepEqual(backend.flat,browser.flat);
   }
 });
 
-test('3.1 browser refuses all older imports so renumbered fields cannot be silently reinterpreted',()=>{
+test('3.2 browser refuses all older imports so different routes cannot be silently reinterpreted',()=>{
   const current=makeRecord(schema,filled(),metadata);
-  for(const old of ['2.0','2.1','2.2','2.3','2.4'])assert.throws(()=>verifyImportedRecord(schema,{...current,schemaVersion:old}),/version/);
+  for(const old of ['2.0','2.1','2.2','2.3','2.4','3.1'])assert.throws(()=>verifyImportedRecord(schema,{...current,schemaVersion:old}),/version/);
 });

@@ -5,6 +5,7 @@ import {schema,question,metadata,filled} from './helpers.mjs';
 import {expandedQuestions,cleanAnswers,validateAll,makeRecord,visibleProducts,updateMultiSelection} from '../logic.mjs';
 import {questionsForSection,pricingOptionsHtml,SCREEN_OUT_TEXT} from '../presentation.mjs';
 import {productIntroHtml} from '../product-intro.mjs';
+import {conditionMet} from '../logic.mjs';
 const keys=a=>expandedQuestions(schema,a).map(q=>q.key);
 
 test('screenshot requirement 1: Q1 No ends the survey with both age and student eligibility explained',()=>{
@@ -18,10 +19,10 @@ test('screenshot requirement 2: Q13 No skips exactly experience follow-ups Q14�
 test('screenshot requirement 3: only the product rated uninterested receives Q19',()=>{
   for(const [S,B,expected] of [[1,5,['S']],[5,1,['B']],[5,5,[]]])assert.deepEqual(visibleProducts(question('Q19'),filled({Q18_S:S,Q18_B:B})),expected);
 });
-test('screenshot requirement 4: two uninterested products skip Q24–Q28 and Q31–Q32 while charger and comments remain',()=>{
+test('updated requirement 4: two uninterested products skip Q24–Q28 and Q32; Q31 remains for all eligible students',()=>{
   const a=filled({Q18_S:1,Q18_B:1});
-  for(const item of expandedQuestions(schema,a))assert.equal([24,25,26,27,28,31,32].includes(item.q.number),false,item.key);
-  for(const id of ['Q19_S','Q19_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q29','Q30','Q33'])assert.ok(keys(a).includes(id),id);
+  for(const item of expandedQuestions(schema,a))assert.equal([24,25,26,27,28,32].includes(item.q.number),false,item.key);
+  for(const id of ['Q19_S','Q19_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q29','Q30','Q31','Q33'])assert.ok(keys(a).includes(id),id);
 });
 test('screenshot requirement 5: plans 1–3 show Q27 and None 4 shows Q28 independently',()=>{
   for(const s of [1,2,3,4])for(const b of [1,2,3,4]){
@@ -75,13 +76,56 @@ test('pricing text is HTML-escaped and missing per-product pricing fails instead
   const html=pricingOptionsHtml(data,question('Q26'),'S','Q26_S',1,[1,2,3]);assert.doesNotMatch(html,/<img/);assert.match(html,/&lt;img/);assert.match(html,/A &amp; B/);
   assert.throws(()=>pricingOptionsHtml({...schema,plansByProduct:{}},question('Q26'),'S','Q26_S',1,[1,2,3]),/missing/);
 });
-test('all entry points load 3.1 resources and app uses tested presentation and cleanup functions',async()=>{
+test('all entry points load 3.2 resources and app uses tested presentation and cleanup functions',async()=>{
   for(const name of ['app.mjs','admin.mjs','index.html','admin.html','presentation.mjs']){
-    const source=await readFile(new URL('../'+name,import.meta.url),'utf8');assert.doesNotMatch(source,/\?v=2\./,name);assert.match(source,/\?v=3\.1/,name);
+    const source=await readFile(new URL('../'+name,import.meta.url),'utf8');assert.doesNotMatch(source,/\?v=(?:2\.|3\.1)/,name);assert.match(source,/\?v=3\.2/,name);
     if(name==='app.mjs'){
       assert.match(source,/questionsForSection\(section,state.answers\)/);assert.match(source,/pricingOptionsHtml\(schema,q,product,key,value,state.planOrder\)/);
       assert.match(source,/inputHtml\(q,keyFor\(q,p\),p\)/);assert.match(source,/state.answers=cleanAnswers\(schema,state.answers\)/);
       assert.match(source,/o.other&&chosen/);assert.match(source,/SCREEN_OUT_TEXT/);assert.doesNotMatch(source,/schema.plans.find/);
     }
   }
+});
+
+test('on_campus requires eligible status and exactly a valid scalar Q5=1',()=>{
+  for(const eligible of [1,'1'])for(const living of [1,'1'])assert.equal(conditionMet('on_campus',{Q1:eligible,Q5:living}),true);
+  for(const value of [undefined,null,'',0,2,3,99,1.5,[1],{},true,false,NaN,Infinity,'01'])assert.equal(conditionMet('on_campus',{Q1:1,Q5:value}),false,JSON.stringify(value));
+  for(const value of [undefined,null,0,[1],true,2])assert.equal(conditionMet('on_campus',{Q1:value,Q5:1}),false);
+});
+
+test('Q5 moving off campus hides Q6, clears its old answer and exports blank with asked=0',()=>{
+  for(const living of [2,3,'2','3'])for(const distance of [1,2,3,4,5]){
+    const before=filled({Q5:1,Q6:distance}),after=cleanAnswers(schema,{...before,Q5:living});
+    assert.equal(after.Q6,undefined);assert.equal(keys(after).includes('Q6'),false);
+    assert.deepEqual(validateAll(schema,after),[]);
+    const r=makeRecord(schema,after,metadata);assert.equal(r.asked.Q6,false);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,0);
+  }
+});
+
+test('Q5 returning on campus requires a new Q6 answer and does not resurrect the cleared value',()=>{
+  const off=cleanAnswers(schema,{...filled({Q5:1,Q6:5}),Q5:2});
+  const back=cleanAnswers(schema,{...off,Q5:1});assert.equal(back.Q6,undefined);assert.ok(keys(back).includes('Q6'));
+  assert.ok(validateAll(schema,back).some(e=>e.key==='Q6'));assert.throws(()=>makeRecord(schema,back,metadata));
+  const r=makeRecord(schema,{...back,Q6:3},metadata);assert.equal(r.flat.V_Q6,3);assert.equal(r.flat.V_Q6__asked,1);
+});
+
+test('Q6 99 is rejected when asked; stale off-campus values are removed rather than exported as missing answers',()=>{
+  for(const value of [99,'99']){
+    const on=filled({Q5:1,Q6:value});assert.ok(validateAll(schema,on).some(e=>e.key==='Q6'));assert.throws(()=>makeRecord(schema,on,metadata));
+    const off=filled({Q5:2,Q6:value}),r=makeRecord(schema,off,metadata);assert.equal(r.answers.Q6,undefined);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,0);
+  }
+});
+
+test('all 75 living-and-interest combinations require Q31; Q6 still depends only on living location',()=>{
+  for(const living of [1,2,3])for(const S of [1,2,3,4,5])for(const B of [1,2,3,4,5]){
+    const a=filled({Q5:living,Q18_S:S,Q18_B:B,Q31:0});assert.deepEqual(validateAll(schema,a),[]);
+    const r=makeRecord(schema,a,metadata);assert.equal(r.asked.Q6,living===1);assert.equal(r.asked.Q31,true);assert.equal(r.flat.V_Q31,0);assert.equal(r.flat.V_Q31__asked,1);
+    const missing={...a};delete missing.Q31;assert.ok(validateAll(schema,missing).some(e=>e.key==='Q31'));assert.throws(()=>makeRecord(schema,missing,metadata));
+    assert.equal(r.asked.Q32,S>1||B>1);assert.equal(r.asked.Q24,S>1||B>1);
+  }
+});
+
+test('Q31 survives interest changes and remains absent for an ineligible respondent',()=>{
+  const next=cleanAnswers(schema,{...filled({Q31:8}),Q18_S:1,Q18_B:1});assert.equal(next.Q31,8);assert.ok(keys(next).includes('Q31'));
+  assert.equal(cleanAnswers(schema,{...next,Q1:0}).Q31,undefined);assert.equal(keys({Q1:0,Q31:8}).includes('Q31'),false);
 });

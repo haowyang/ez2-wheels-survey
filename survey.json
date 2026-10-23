@@ -1,5 +1,5 @@
 {
-  "version": "3.1",
+  "version": "3.2",
   "title": "eZ2 Wheels Student Survey",
   "intro": [
     "We are students conducting a market-research project for a company called Bikes N’ Spikes (BNS). Taking part is voluntary. There are no right or wrong answers.",
@@ -9,6 +9,7 @@
   "conditionDefinitions": {
     "always": "Shown to every respondent.",
     "eligible": "V_Q1 = 1",
+    "on_campus": "V_Q1 = 1 and V_Q5 = 1",
     "experienced": "V_Q1 = 1 and V_Q13 = 1",
     "interested_S": "V_Q1 = 1 and V_Q18_S is 2–5",
     "interested_B": "V_Q1 = 1 and V_Q18_B is 2–5",
@@ -225,7 +226,7 @@
         {
           "id": "Q5",
           "number": 5,
-          "oldRef": "v2.4 Q5",
+          "oldRef": "v2.4 Q5 (now routes Q6)",
           "variable": "V_Q5",
           "text": "Where do you live during the semester?",
           "type": "single",
@@ -252,9 +253,9 @@
         {
           "id": "Q6",
           "number": 6,
-          "oldRef": "v2.4 Q6 (reworded)",
+          "oldRef": "v2.4 Q6 (shown only if Q5 = On campus; Not applicable removed)",
           "variable": "V_Q6",
-          "text": "If you live on campus, about how far is it from where you live to your classes? Choose “Not applicable” if you do not live on campus.",
+          "text": "About how far is it from where you live to your classes?",
           "type": "single",
           "options": [
             {
@@ -276,19 +277,12 @@
             {
               "value": 5,
               "label": "3–5 miles"
-            },
-            {
-              "value": 99,
-              "label": "Not applicable — I do not live on campus"
             }
           ],
           "required": true,
-          "condition": "eligible",
+          "condition": "on_campus",
           "exportFields": [
             "V_Q6"
-          ],
-          "missingValues": [
-            99
           ]
         },
         {
@@ -1643,7 +1637,7 @@
         {
           "id": "Q31",
           "number": 31,
-          "oldRef": "v2.4 Q31",
+          "oldRef": "v2.4 Q31 (now shown to all eligible respondents)",
           "variable": "V_Q31",
           "text": "If you could buy (instead of renting) an eZ2 vehicle of your own for use off campus, how likely would you be to buy one?",
           "type": "scale",
@@ -1694,7 +1688,7 @@
             }
           ],
           "required": true,
-          "condition": "any_interest",
+          "condition": "eligible",
           "min": 0,
           "max": 10,
           "decimals": 0,

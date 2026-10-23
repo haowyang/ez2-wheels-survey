@@ -9,14 +9,14 @@ test('all 1600 interest, experience, charger and plan combinations validate and 
     const a=filled({Q18_S:S,Q18_B:B,Q13:experience,Q29:charge,Q26_S:sPlan,Q26_B:bPlan});
     assert.deepEqual(validateAll(schema,a),[]);const r=makeRecord(schema,a,metadata);
     for(const key of ['Q14','Q15','Q16'])assert.equal(r.asked[key],experience===1,key);
-    for(const key of ['Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q12','Q29','Q33'])assert.equal(r.asked[key],true,key);
+    for(const key of ['Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q12','Q29','Q31','Q33'])assert.equal(r.asked[key],true,key);
     for(const [p,interest,plan] of [['S',S,sPlan],['B',B,bPlan]]){
       assert.equal(r.asked['Q19_'+p],interest===1);
       for(const id of ['Q25','Q26'])assert.equal(r.asked[id+'_'+p],interest>1);
       assert.equal(r.asked['Q27_'+p],interest>1&&plan<=3);
       assert.equal(r.asked['Q28_'+p],interest>1&&plan===4);
     }
-    for(const key of ['Q24','Q31','Q32'])assert.equal(r.asked[key],S>1||B>1,key);
+    for(const key of ['Q24','Q32'])assert.equal(r.asked[key],S>1||B>1,key);
     assert.equal(r.asked.Q30,charge>1);count++;
   }
   assert.equal(count,1600);
@@ -55,8 +55,8 @@ test('changing experience clears payment, locations, reliability and Other text'
 
 test('changing interest clears only hidden descendants and retains general attitudes, budget and charging',()=>{
   const next=cleanAnswers(schema,{...filled({Q26_B:4,Q28_B:[6],Q28_B__6_text:'Other reason'}),Q18_S:1,Q18_B:1});
-  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q28_B','Q28_B__6_text','Q31','Q32'])assert.equal(next[key],undefined,key);
-  for(const key of ['Q12','Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q22_B','Q23_S','Q29','Q30','Q33'])assert.ok(Object.hasOwn(next,key),key);
+  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q28_B','Q28_B__6_text','Q32'])assert.equal(next[key],undefined,key);
+  for(const key of ['Q12','Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q22_B','Q23_S','Q29','Q30','Q31','Q33'])assert.ok(Object.hasOwn(next,key),key);
   assert.ok(validateAll(schema,next).some(e=>e.key==='Q19_S'));
 });
 
@@ -98,11 +98,11 @@ test('every Other field is required, exported and removed for both scalar and mu
   }
 });
 
-test('export has exactly 98 values plus 98 asked indicators; missing Q6 stays raw 99',()=>{
-  const r=makeRecord(schema,filled({Q6:99,Q8:[1,4]}),metadata),fields=questions.flatMap(q=>q.exportFields);
+test('export has exactly 98 values plus 98 asked indicators; off-campus Q6 is absent with asked=0',()=>{
+  const r=makeRecord(schema,filled({Q5:2,Q6:99,Q8:[1,4]}),metadata),fields=questions.flatMap(q=>q.exportFields);
   assert.equal(fields.length,98);assert.equal(Object.keys(r.flat).length,196);
   assert.deepEqual(Object.keys(r.flat).filter(k=>!k.endsWith('__asked')).sort(),[...fields].sort());
-  assert.equal(r.answers.Q6,99);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,1);
+  assert.equal(r.answers.Q6,undefined);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,0);
   assert.equal(r.flat.V_Q8_1,1);assert.equal(r.flat.V_Q8_2,0);assert.equal(r.flat.V_Q8_4,1);
   assert.equal(r.flat.V_Q8_9,undefined);
 });

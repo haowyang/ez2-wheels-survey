@@ -1,4 +1,4 @@
-import {isVisible, orderedOptions, PRODUCT_NAMES} from './logic.mjs?v=3.1';
+import {isVisible, orderedOptions, PRODUCT_NAMES} from './logic.mjs?v=3.2';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const same=(a,b)=>String(a)===String(b);
