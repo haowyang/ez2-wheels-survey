@@ -1,37 +1,38 @@
-# eZ2 Wheels Student Survey — 2.4
+# eZ2 Wheels Student Survey — 3.1
 
 Public questionnaire: https://haowyang.github.io/ez2-wheels-survey/
 
-This release contains the complete 33-question survey. `config.json` connects it to the unified Google Apps Script collector. A response is submitted only when the Google confirmation page says it was saved.
+This release implements the teammate's 33-question 3.1 questionnaire. Respondent-facing wording, options and product prices match the supplied file. Two analysis notes were corrected: Q30's first compensation band includes zero, and Q24's combined weekly-use bands are categories, not a calculation of the cheapest plan for each vehicle.
 
-## Questionnaire changes
+## Routing and presentation
 
-- Both products use the same source-supported comparison headings: Pick-up, Return, and Charging. Product-specific details are preserved. Unspecified range, riding-area and rental-duration comparisons have been removed without inventing specifications.
-- Q5 separates off-campus housing within walking distance from housing beyond walking distance.
-- Q8 adds “I do not currently travel between locations on campus.” This option is exclusive: selecting it clears other modes; selecting another mode clears it. The collector rejects a conflicting combination. Its new binary export field is `V_Q8_9`.
-- Q12 first separates never-use and only one or two lifetime rides. Respondents with more than two lifetime rides select their average monthly use over the past three months: less than one, one to less than four, or four or more. Codes 2–5 still trigger the experience questions.
-- Q14 adds code 99, “Not enough experience to judge.” It is a missing analysis value with asked=1, not a low reliability score.
-- Q6 retains the previously approved distance choices and NA rule. Q15 liking precedes Q16 interest. Q23–Q26 retain their non-overlapping response bands; Q26 is shown to all eligible respondents. A zero use, walking or budget response does not override Q16 pricing routes.
+- Q1 screens for students age 18 or older at a large public university in the U.S.; No ends the survey.
+- Q13 Yes shows experience questions Q14–Q16; No skips them.
+- Everyone eligible rates liking in Q17 before interest in Q18. Q19 asks refusal reasons only for a product rated 1 in Q18.
+- When both products have Q18=1, Q24–Q28 and Q31–Q32 are skipped. Q12's monthly campus budget remains available to all eligible respondents.
+- Q24 asks one combined weekly-use question. Q25 and Q26 are shown only for products with Q18=2–5.
+- Q26 has separate scooter and bike price tables. The three schemes share one randomized display order; None stays last. A scheme triggers Q27, while None triggers Q28, for that product only.
+- Q29=1 skips Q30. All selected Other options show their required text fields; changing an upstream answer removes hidden answers.
 
-## Collection and export
+Q3's Other option is single-choice. Q6 retains the previously approved choices and NA=99. The teammate removed the old Q8 no-travel option and the reliability uncertainty option; neither is silently restored. Response bands and 1–10 or 0–10 scales follow the 3.1 source exactly.
 
-There is one private **Responses** table and one **Codebook**. The collector accepts questionnaire versions 2.2, 2.3 and 2.4, validates each using its own frozen rules and preserves the original `survey_version` and answers.
+## Collection and historical compatibility
 
-The unified table has 217 columns. Its first 215 retain their prior names and positions; the new `V_Q8_9` and `V_Q8_9__asked` occupy columns 216 and 217. The table has seven metadata columns, 105 questionnaire value fields and 105 asked flags. The six legacy numeric fields remain available for 2.2 responses. Values are not converted between old numeric answers and newer band answers.
+There is one private **Responses** tab and one **Codebook**. The collector validates 2.2, 2.3, 2.4 and 3.1 with separate engines. Existing response IDs, timestamps, source versions and values are preserved. The three historical engines remain unchanged.
 
-The 2.4 browser exports its own 99 questionnaire fields and 99 asked flags. Its backup CSV has 203 columns including five metadata fields. A 2.4 collector source record has 205 columns including seven metadata fields; the collector maps that record by field name into the 217-column unified table. `admin.html` merges local JSON files from this questionnaire version; it does not expose other respondents' data.
+The unified table has 413 columns: the original 217 columns followed by 196 new columns for 3.1 (98 values and 98 asked indicators). Every new physical field has a `v3_1__` prefix because question numbering and meanings changed. For example, a 3.1 answer using source field `V_Q13` is stored in `v3_1__V_Q13`. Do not combine fields solely because their source question numbers match.
 
-The six band fields contain category codes, not measured dollars, hours or minutes. Zero is substantive. Code 99 in Q6, Q14 and Q23–Q26 is retained in raw JSON but exported as blank with asked=1. Route-skipped and source-version-inapplicable fields are blank with asked=0. The response table stores analysis values and asked flags, not a separate raw-answers column.
+New-version fields in historical rows are blank with asked=0. Historical fields in 3.1 rows are also blank with asked=0. Within a version, route-skipped fields have asked=0, while declared missing answers such as Q6=99 have a blank analysis value and asked=1. Category codes are not measured dollars, minutes or hours; use the Codebook's interval definitions.
 
-Q5 and Q12 wording changed in 2.4, and Q14 gained an explicit uncertainty response. Interpret their values using `survey_version`; matching codes do not make different questionnaire wording identical. Q12 now has a fixed three-month reference period and a lifetime-trial category. Do not retrospectively assign that definition to 2.2 or 2.3 answers.
+The browser's JSON uses original 3.1 field names. Its local backup CSV has 201 columns (five metadata fields, 98 values and 98 asked flags). These backups are not submissions. `admin.html` checks and combines only matching-version local JSON files; it does not expose stored responses.
 
-## Editing and testing
+## Editing and verification
 
-Edit `survey.json` together with the shared validation rules, collector engines and Codebook when changing question meanings or export fields. Keep private responses, Sheet IDs, backups and credentials out of this public repository. See the [collector instructions](google-sheets/README.md).
+Update `survey.json`, shared routing, the current collector engine and Codebook together when question meanings change. Keep actual responses, private Sheet IDs, backups and credentials out of the public repository. See [collector instructions](google-sheets/README.md).
 
 ```sh
 npm test
 node serve.mjs
 ```
 
-Tests cover every question's valid and invalid responses, requiredness, Other explanations, branch combinations, exclusivity, missing values, field mappings, and version-specific collector behavior. Local tests do not establish that a deployment succeeded; release verification checks the public site and actual receipt separately.
+Tests cover every question, requiredness, Other fields, source fidelity, all eight teammate routing checks, pricing, export mappings and version-specific collection. Deployment verification additionally checks the published files and real browser submissions against the saved Sheet rows.

@@ -5,21 +5,22 @@ export const keyFor = (q, product) => product ? `${q.id}_${product}` : q.id;
 export const otherKey = (key, option) => `${key}__${option.value}_text`;
 const hasValue = value => value !== undefined && value !== null && value !== '';
 const same = (a,b) => String(a) === String(b);
+const isCode = (value, codes) => ['number','string'].includes(typeof value) && codes.some(code=>same(value,code));
 export function conditionMet(condition, answers) {
   if (condition?.includes('||')) return condition.split('||').some(part=>conditionMet(part.trim(),answers));
-  const eligible = same(answers.Q1, 1);
-  const interest = p => Number(answers[`Q16_${p}`]) >= 2 && Number(answers[`Q16_${p}`]) <= 5;
+  const eligible = isCode(answers.Q1, [1]);
+  const interest = p => isCode(answers[`Q18_${p}`], [2,3,4,5]);
   if (!condition || condition === 'always') return true;
   if (condition === 'eligible') return eligible;
   if (!eligible) return false;
-  if (condition === 'experienced') return ['number','string'].includes(typeof answers.Q12) && [2,3,4,5].some(value => same(answers.Q12, value));
+  if (condition === 'experienced') return isCode(answers.Q13, [1]);
   if (condition === 'any_interest') return interest('S') || interest('B');
-  if (condition === 'charger_interest') return Number(answers.Q22) >= 2 && Number(answers.Q22) <= 5;
+  if (condition === 'charger_interest') return isCode(answers.Q29, [2,3,4,5]);
   const [_, p] = condition.match(/_([SB])$/) || [];
-  if (condition.startsWith('uninterested_')) return same(answers[`Q16_${p}`], 1);
+  if (condition.startsWith('uninterested_')) return isCode(answers[`Q18_${p}`], [1]);
   if (condition.startsWith('interested_')) return interest(p);
-  if (condition.startsWith('chose_plan_')) return interest(p) && [1,2,3].includes(Number(answers[`Q27_${p}`]));
-  if (condition.startsWith('chose_none_')) return interest(p) && same(answers[`Q27_${p}`], 4);
+  if (condition.startsWith('chose_plan_')) return interest(p) && isCode(answers[`Q26_${p}`], [1,2,3]);
+  if (condition.startsWith('chose_none_')) return interest(p) && isCode(answers[`Q26_${p}`], [4]);
   throw new Error(`Unknown condition: ${condition}`);
 }
 export function visibleProducts(q, answers) {
@@ -108,7 +109,7 @@ export function shuffledPlans(rng=Math.random) {
   return result;
 }
 export function orderedOptions(q,planOrder) {
-  if (q.id!=='Q27') return q.options || [];
+  if (q.id!=='Q26') return q.options || [];
   const options=q.options || [];
   return [...planOrder.map(value=>options.find(o=>same(o.value,value))).filter(Boolean),...options.filter(o=>!planOrder.some(v=>same(v,o.value)))];
 }

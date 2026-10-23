@@ -9,38 +9,45 @@ for(const version of ['2.2','2.3']){
  const c=vm.createContext({}),text=fs.readFileSync(path.join(root,'testing/fixtures/original-'+version+'.gs.txt'),'utf8');
  vm.runInContext(text,c);oracles[version]=c;oracleSources[version]=text;
 }
+const previous24=fs.readFileSync(path.join(root,'testing/fixtures/original-2.4.gs.txt'),'utf8');
+oracles['2.4']=vm.createContext({});vm.runInContext(previous24,oracles['2.4']);oracleSources['2.4']=previous24;
+const rules24=vm.createContext({});vm.runInContext(previous24.split('"2.4":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0],rules24);
 const currentSchema=JSON.parse(fs.readFileSync(path.join(site,'survey.json'),'utf8'));
 const frontend=fs.readFileSync(path.join(site,'logic.mjs'),'utf8').replace(/^export /gm,'');
-oracles['2.4']=vm.createContext({});vm.runInContext('const SURVEY_SCHEMA='+JSON.stringify(currentSchema)+';\n'+frontend,oracles['2.4']);
-const schemaFor=v=>JSON.parse(vm.runInContext('JSON.stringify(SURVEY_SCHEMA)',oracles[v]));
-const expectedRecord=p=>p.schemaVersion==='2.4'?oracles['2.4'].makeRecord(currentSchema,p.answers,{...p,planOrder:p.planOrder.map(String)}):oracles[p.schemaVersion].canonicalRecord_(p);
+oracles['3.1']=vm.createContext({});vm.runInContext('const SURVEY_SCHEMA='+JSON.stringify(currentSchema)+';\n'+frontend,oracles['3.1']);
+const schemaFor=v=>v==='2.4'?clone(oracles[v].engineForVersion_(v).schema):JSON.parse(vm.runInContext('JSON.stringify(SURVEY_SCHEMA)',oracles[v]));
+const rulesFor=v=>v==='2.4'?rules24:oracles[v];
+const expectedRecord=p=>p.schemaVersion==='3.1'?oracles['3.1'].makeRecord(currentSchema,p.answers,{...p,planOrder:p.planOrder.map(String)}):oracles[p.schemaVersion].canonicalRecord_(p);
+const priorWidth=217,totalWidth=headers.length,extraWidth=totalWidth-priorWidth,firstNew='v3_1__V_Q1';
 let counter=100;
 function packet(version,overrides={}){
  const p=JSON.parse(fs.readFileSync(path.join(root,'testing/qa/packet-'+version+'.json'),'utf8'));
  p.responseId='aaaaaaaa-aaaa-4aaa-8aaa-'+String(++counter).padStart(12,'0');Object.assign(p.answers,overrides);
- for(let pass=0;pass<4;pass++)for(const {q,key} of oracles[version].expandedQuestions(schemaFor(version),p.answers)){
+ for(let pass=0;pass<4;pass++)for(const {q,key} of rulesFor(version).expandedQuestions(schemaFor(version),p.answers)){
   if(p.answers[key]!==undefined)continue;
   const type=q.type.replace('product_','');p.answers[key]=type==='text'?'SYNTHETIC':type==='multi'?[q.options[0].value]:type==='single'?q.options[0].value:q.min||0;
  }
  return p;
 }
 function digest(r){return sha(JSON.stringify({version:r.schemaVersion,answers:r.answers,planOrder:r.planOrder}));}
-function rowFor(p,width=215){
- const r=expectedRecord(p),fields={submission_id:r.responseId,received_at_utc:'2026-10-22T17:00:00.000Z',survey_version:r.schemaVersion,started_at_utc:r.startedAt,completed_at_utc:r.completedAt,plan_order:r.planOrder.join('|'),payload_sha256:digest(r),...r.flat};
- return (width===215?previousHeaders:headers).map(f=>{
+function rowFor(p,width=priorWidth){
+ const r=expectedRecord(p),fields={submission_id:r.responseId,received_at_utc:'2026-10-23T17:00:00.000Z',survey_version:r.schemaVersion,started_at_utc:r.startedAt,completed_at_utc:r.completedAt,plan_order:r.planOrder.join('|'),payload_sha256:digest(r)};
+ for(const [key,value] of Object.entries(r.flat))fields[p.schemaVersion==='3.1'?'v3_1__'+key:key]=value;
+ return (width===priorWidth?previousHeaders:headers).map(f=>{
   const value=Object.hasOwn(fields,f)?fields[f]:f.endsWith('__asked')?0:'';
   return typeof value==='string'&&/^[=+\-@\t\r]/.test(value)?"'"+value:String(value??'');
  });
 }
 function harness({upgraded=true,rows=[],columns}={}){
- const state={locked:false,writes:[],expansions:[],flushes:0,failWrite:false,failHeaderWrite:false,partialHeaderFailure:false,failExpand:false,failFlushAt:0,corruptExtraRead:false,onExtraWrite:null,throwAfterExtraWrite:false,logs:[]};
+ const state={locked:false,writes:[],expansions:[],flushes:0,failWrite:false,failHeaderWrite:false,partialHeaderFailure:false,failExpand:false,failFlushAt:0,corruptExtraRead:false,onExtraWrite:null,throwAfterExtraWrite:false,logs:[],reads:[],boundReads:false};
  const sheets={};
  class Range{
   constructor(sheet,row,col,n=1,width=1){Object.assign(this,{sheet,row,col,n,width});assert.ok(row>=1&&col>=1&&n>=1&&col+width-1<=sheet.maxColumns);}
   getRow(){return this.row;}
   getDisplayValues(){
+   state.reads.push({row:this.row,column:this.col,count:this.n,width:this.width});if(state.boundReads)assert.ok(this.n<=100,'upgrade reads are bounded to 100 rows');
    const values=Array.from({length:this.n},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.data[this.row+r-1]?.[this.col+c-1]??''));
-   if(state.corruptExtraRead&&this.row>1&&this.col===216&&state.writes.some(w=>w.column===216&&w.row>1))values[0][0]='bad read';
+   if(state.corruptExtraRead&&this.row>1&&this.col===218&&state.writes.some(w=>w.column===218&&w.row>1))values[0][0]='bad read';
    return values;
   }
   setRichTextValues(values){
@@ -49,8 +56,8 @@ function harness({upgraded=true,rows=[],columns}={}){
    const partial=state.partialHeaderFailure&&this.row===1;
    values.forEach((row,r)=>{assert.equal(row.length,this.width);this.sheet.data[this.row+r-1]||=[];row.forEach((v,c)=>{if(!partial||c===0)this.sheet.data[this.row+r-1][this.col+c-1]=v.text;});});
    state.writes.push({row:this.row,column:this.col,count:this.n,width:this.width});
-   if(this.row>1&&this.col===216&&state.onExtraWrite){const callback=state.onExtraWrite;state.onExtraWrite=null;callback();}
-   if(partial||(this.row>1&&this.col===216&&state.throwAfterExtraWrite))throw Error('mock applied-write failure');
+   if(this.row>1&&this.col===218&&state.onExtraWrite){const callback=state.onExtraWrite;state.onExtraWrite=null;callback();}
+   if(partial||(this.row>1&&this.col===218&&state.throwAfterExtraWrite))throw Error('mock applied-write failure');
   }
   createTextFinder(text){const range=this;return {matchEntireCell(v){assert.equal(v,true);return this;},findNext(){const i=range.getDisplayValues().findIndex(r=>r[0]===text);return i<0?null:new Range(range.sheet,range.row+i,range.col);}};}
  }
@@ -62,7 +69,7 @@ function harness({upgraded=true,rows=[],columns}={}){
   getRange(...args){return new Range(this,...args);}
   insertColumnsAfter(after,count){assert.equal(state.locked,true);assert.equal(after,this.maxColumns);if(state.failExpand)throw Error('mock expand failure');this.maxColumns+=count;state.expansions.push({after,count});}
  }
- sheets.Responses=new Sheet([upgraded?headers:previousHeaders,...rows],columns??(upgraded?217:215));
+ sheets.Responses=new Sheet([upgraded?headers:previousHeaders,...rows],columns??(upgraded?totalWidth:priorWidth));
  const props={SPREADSHEET_ID:'offline_spreadsheet_12345678901234567890',RETURN_URL:'https://example.github.io/survey/'};
  const ctx=vm.createContext({
   console:{log:s=>state.logs.push(s),warn:s=>state.logs.push(s)},
@@ -77,104 +84,135 @@ function harness({upgraded=true,rows=[],columns}={}){
  const cell=(field,row=1)=>sheets.Responses.data[row][headers.indexOf(field)];
  return {ctx,state,sheets,props,submit,cell};
 }
-const original215=h=>h.sheets.Responses.getRange(1,1,h.sheets.Responses.getLastRow(),215).getDisplayValues();
+const originalPrefix=h=>h.sheets.Responses.getRange(1,1,h.sheets.Responses.getLastRow(),priorWidth).getDisplayValues();
 
-test('217 headers preserve the complete frozen 215-column prefix and append only Q8 none',()=>{
- assert.equal(headers.length,217);assert.equal(new Set(headers).size,217);assert.deepEqual(headers.slice(0,215),previousHeaders);assert.deepEqual(headers.slice(215),['V_Q8_9','V_Q8_9__asked']);
- assert.deepEqual(previousHeaders.slice(0,203),clone(oracles['2.3'].backendHeaders_()));
- assert.deepEqual(previousHeaders.slice(203),['V_Q23','V_Q24_S','V_Q24_B','V_Q25_S','V_Q25_B','V_Q26'].flatMap(f=>[f,f+'__asked']));
- assert.equal(harness().ctx.sourceHeaders_('2.4').length,205);
+
+test('413 headers preserve the entire frozen 217 prefix and append all 3.1 fields in an isolated namespace',()=>{
+ assert.equal(totalWidth,413);assert.equal(new Set(headers).size,413);assert.deepEqual(headers.slice(0,priorWidth),previousHeaders);
+ const fields=currentSchema.sections.flatMap(s=>s.questions).flatMap(q=>q.exportFields);
+ assert.equal(fields.length,98);assert.deepEqual(headers.slice(priorWidth),fields.flatMap(f=>['v3_1__'+f,'v3_1__'+f+'__asked']));
+ assert.deepEqual(previousHeaders,clone(oracles['2.4'].backendHeaders_()));assert.equal(harness().ctx.sourceHeaders_('3.1').length,203);
 });
-test('all embedded 2.2/2.3 schema and logic source remains unchanged from its frozen oracle',()=>{
+test('all 2.2, 2.3 and 2.4 engine source is frozen exactly, including functions not exported from the IIFE',()=>{
  const normalize=s=>s.replace(/\r\n/g,'\n').trim();
- for(const version of ['2.2','2.3']){
+ for(const version of ['2.2','2.3','2.4']){
   const embedded=source.split('"'+version+'":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0];
-  const oracle=oracleSources[version].slice(0,oracleSources[version].indexOf('/* Google Sheets receiver'));
+  const oracle=version==='2.4'?previous24.split('"2.4":(function(){')[1].split('return Object.freeze({schema:SURVEY_SCHEMA')[0]:oracleSources[version].split('/* Google Sheets receiver')[0];
   assert.equal(normalize(embedded),normalize(oracle));
  }
+ assert.equal(sha(previous24),'d849cd5c4e7a5f65b587f5e76f68263d1a42d9fb2a81def87ef4d3bbf92a4811');
 });
-test('all three engines retain exact canonical values and digest across 216 routing combinations',()=>{
+test('all four versions preserve canonical answers and digest over 288 meaningful route combinations',()=>{
  const h=harness();
- for(const version of ['2.2','2.3','2.4'])for(const S of [1,2,5])for(const B of [1,2,5])for(const experience of [1,2])for(const charge of [1,5]){
-  const p=packet(version,{Q16_S:S,Q16_B:B,Q12:experience,Q22:charge,Q27_S:1,Q27_B:4,Q13:[4],Q13__4_text:'source',Q29_B:[3],Q29_B__3_text:'weekly'});
-  const actual=h.ctx.canonicalRecord_(p),expected=expectedRecord(p);
+ for(const version of ['2.2','2.3','2.4','3.1'])for(const S of [1,2,5])for(const B of [1,2,5])for(const experience of [false,true])for(const charge of [1,5]){
+  const overrides=version==='3.1'?{Q18_S:S,Q18_B:B,Q13:experience?1:0,Q29:charge,Q26_S:1,Q26_B:4,Q15:[4],Q15__4_text:'source',Q28_B:[3],Q28_B__3_text:'weekly'}:
+   {Q16_S:S,Q16_B:B,Q12:experience?2:1,Q22:charge,Q27_S:1,Q27_B:4,Q13:[4],Q13__4_text:'source',Q29_B:[3],Q29_B__3_text:'weekly'};
+  const p=packet(version,overrides),actual=h.ctx.canonicalRecord_(p),expected=expectedRecord(p);
   assert.deepEqual(clone(actual),clone(expected));assert.equal(digest(actual),digest(expected));
  }
 });
-test('legacy continuous values and new bands stay distinct; absent new Q8 remains blank/asked0',()=>{
- const h=harness();for(const v of ['2.2','2.3','2.4'])assert.match(h.submit(packet(v)),/has been saved/);
- assert.equal(h.cell('V_Q24_S',1),'0.5');assert.equal(h.cell('V_Q23',1),'2.5');assert.equal(h.cell('V_Q24_band_S',1),'');assert.equal(h.cell('V_Q24_band_S__asked',1),'0');
- assert.equal(h.cell('V_Q24_band_S',2),'0');assert.equal(h.cell('V_Q24_band_S__asked',2),'1');assert.equal(h.cell('V_Q23_band',2),'');assert.equal(h.cell('V_Q23_band__asked',2),'1');
- for(const row of [1,2]){assert.equal(h.cell('V_Q8_9',row),'');assert.equal(h.cell('V_Q8_9__asked',row),'0');}
- assert.equal(h.cell('V_Q8_9',3),'1');assert.equal(h.cell('V_Q8_9__asked',3),'1');
-});
-test('Q8 none is exclusive through the endpoint handler; it is not silently cleaned into a valid answer',()=>{
- const h=harness();for(const values of [[9,1],['9',1],[9,'8'],[9,1,2]]){
-  assert.match(h.submit(packet('2.4',{Q8:values,Q8__8_text:'Other transport'})),/could not be saved/);
+test('same names never mix meanings: all 210 old value/asked cells are absent for 3.1, all 196 new cells absent for old versions',()=>{
+ const h=harness();
+ for(const [row,version] of ['2.2','2.3','2.4','3.1'].entries()){
+  const p=packet(version);assert.match(h.submit(p),/has been saved/);const actual=h.sheets.Responses.data[row+1],expected=rowFor(p,totalWidth);
+  for(let col=0;col<totalWidth;col++)if(col!==1)assert.equal(actual[col],expected[col],version+' '+headers[col]);
+  const unrelated=version==='3.1'?headers.slice(7,priorWidth):headers.slice(priorWidth);
+  for(const field of unrelated)assert.equal(h.cell(field,row+1),field.endsWith('__asked')?'0':'',version+' '+field);
  }
+ assert.equal(h.cell('V_Q24_S',1),'0.5');assert.equal(h.cell('V_Q24_band_S',2),'0');
+ assert.equal(h.cell('v3_1__V_Q3',4),'8');assert.equal(h.cell('v3_1__V_Q14',4),'1');assert.equal(h.cell('V_Q14',4),'');
+});
+test('storage prefix affects physical projection only, never raw answers, frontend exports, or digest',()=>{
+ const h=harness(),p=packet('3.1'),r=h.ctx.canonicalRecord_(p);
+ assert.ok(Object.keys(r.flat).every(key=>!key.startsWith('v3_1__')));assert.equal(r.answers.Q3,8);assert.equal(r.flat.V_Q3,8);
+ p.flat={'V_Q14':999,'v3_1__V_Q14':999};p.asked={Q14:false};assert.match(h.submit(p),/has been saved/);
+ assert.equal(h.cell('v3_1__V_Q14'),'1');assert.equal(h.cell('payload_sha256'),digest(expectedRecord(p)));
+ const illegal=packet('3.1');illegal.answers.v3_1__Q3=1;assert.match(h.submit(illegal),/unknown question/);
+});
+test('3.1 Q3 Other is required, bounded, exported, formula-safe, and cleared when another level is selected',()=>{
+ const h=harness();for(const text of ['', ' ', 'x'.repeat(41)])assert.match(h.submit(packet('3.1',{Q3:8,Q3__8_text:text})),/could not be saved/);
  assert.equal(h.state.writes.length,0);
- for(const v of [9,'9'])assert.match(h.submit(packet('2.4',{Q8:[v]})),/has been saved/);
- for(const row of [1,2]){assert.equal(h.cell('V_Q8_9',row),'1');assert.equal(h.cell('V_Q8_1',row),'0');assert.equal(h.cell('V_Q8_Other_txt',row),'');}
- assert.match(h.submit(packet('2.4',{Q8:[1,2]})),/has been saved/);assert.equal(h.cell('V_Q8_9',3),'0');assert.equal(h.cell('V_Q8_9__asked',3),'1');
- for(const v of ['2.2','2.3'])assert.match(h.submit(packet(v,{Q8:[9]})),/could not be saved/);
+ for(const value of [8,'8'])assert.match(h.submit(packet('3.1',{Q3:value,Q3__8_text:'x'.repeat(40)})),/has been saved/);
+ assert.equal(h.cell('v3_1__V_Q3_Other_txt'),'x'.repeat(40));assert.equal(h.cell('v3_1__V_Q3_Other_txt__asked'),'1');
+ assert.match(h.submit(packet('3.1',{Q3:8,Q3__8_text:'=private text'})),/has been saved/);assert.equal(h.cell('v3_1__V_Q3_Other_txt',3),"'=private text");
+ const changed=packet('3.1',{Q3:1,Q3__8_text:'stale'});const record=h.ctx.canonicalRecord_(changed);assert.equal(record.answers.Q3__8_text,undefined);
+ assert.match(h.submit(changed),/has been saved/);assert.equal(h.cell('v3_1__V_Q3_Other_txt',4),'');assert.equal(h.cell('v3_1__V_Q3_Other_txt__asked',4),'0');
 });
-test('Q14 unknown is missing only in 2.4 and remains distinct from Never experience',()=>{
- const h=harness();for(const v of ['2.2','2.3'])assert.match(h.submit(packet(v,{Q14:99})),/could not be saved/);
- assert.match(h.submit(packet('2.4',{Q12:2,Q14:99})),/has been saved/);assert.equal(h.cell('V_Q14'),'');assert.equal(h.cell('V_Q14__asked'),'1');
- assert.match(h.submit(packet('2.4',{Q12:1,Q14:99})),/has been saved/);assert.equal(h.cell('V_Q14',2),'');assert.equal(h.cell('V_Q14__asked',2),'0');
- assert.match(h.submit(packet('2.4',{Q12:2,Q14:1})),/has been saved/);assert.equal(h.cell('V_Q14',3),'1');assert.equal(h.cell('V_Q14__asked',3),'1');
-});
-test('version-specific numeric/category bounds, school limits, and budget routing remain enforced',()=>{
- const h=harness();for(const value of [0,.5,1.25,168])assert.match(h.submit(packet('2.2',{Q24_S:value})),/has been saved/);
- for(const value of [-1,.123,168.01,169])assert.match(h.submit(packet('2.2',{Q24_S:value})),/could not be saved/);
- for(const version of ['2.3','2.4']){
-  for(const value of [0,1,2,3,4,5,6,99])assert.match(h.submit(packet(version,{Q24_S:value})),/has been saved/);
-  for(const value of [.5,1.25,7,168])assert.match(h.submit(packet(version,{Q24_S:value})),/could not be saved/);
-  assert.match(h.submit(packet(version,{Q2:'x'.repeat(120)})),/has been saved/);assert.match(h.submit(packet(version,{Q2:'x'.repeat(121)})),/could not be saved/);
-  const p=packet(version,{Q16_S:1,Q16_B:1});delete p.answers.Q26;assert.match(h.submit(p),/could not be saved/);
+test('3.1 experience is controlled only by Q13 Yes, and cleans payment/location/reliability including Other',()=>{
+ const h=harness();
+ for(const value of [1,'1']){
+  const p=packet('3.1',{Q13:value,Q14:4,Q15:[4],Q15__4_text:'Other campus',Q16:5}),r=h.ctx.canonicalRecord_(p);
+  assert.equal(r.asked.Q14,true);assert.equal(r.asked.Q15,true);assert.equal(r.asked.Q16,true);assert.match(h.submit(p),/has been saved/);
  }
- assert.match(h.submit(packet('2.2',{Q2:'x'.repeat(41)})),/could not be saved/);
+ const no=packet('3.1',{Q13:0,Q14:4,Q15:[4],Q15__4_text:'stale',Q16:5}),r=h.ctx.canonicalRecord_(no);
+ for(const key of ['Q14','Q15','Q16','Q15__4_text'])assert.equal(r.answers[key],undefined,key);
+ for(const q of ['Q14','Q15','Q16'])assert.equal(r.asked[q],false);
+ for(const value of [2,99,'',null])assert.match(h.submit(packet('3.1',{Q13:value})),/could not be saved/);
 });
-test('server clears hidden answers and ignores client supplied flat/asked values',()=>{
- const h=harness(),p=packet('2.4',{Q16_S:1,Q16_B:1,Q17_S:[1],Q17_B:[1],Q24_S:999,Q29_S:[3],Q29_S__3_text:'hidden',Q26:99});
- p.flat={V_Q8_9:777,V_Q26_band:99};p.asked={Q26:false};assert.match(h.submit(p),/has been saved/);
- assert.equal(h.cell('V_Q24_band_S'),'');assert.equal(h.cell('V_Q24_band_S__asked'),'0');assert.equal(h.cell('V_Q29_DifferentPlan_txt_S'),'');assert.equal(h.cell('V_Q26_band'),'');assert.equal(h.cell('V_Q26_band__asked'),'1');assert.equal(h.cell('V_Q8_9'),'1');
+test('3.1 uses Q18 interest and Q26 plan choice independently for each product',()=>{
+ const h=harness();
+ const p=packet('3.1',{Q18_S:5,Q18_B:1,Q26_S:4,Q28_S:[3],Q28_S__3_text:'daily plan',Q26_B:1,Q27_B:[7],Q27_B__7_text:'stale'}),r=h.ctx.canonicalRecord_(p);
+ for(const key of ['Q24','Q25_S','Q26_S','Q28_S','Q31','Q32','Q19_B'])assert.equal(r.asked[key],true,key);
+ for(const key of ['Q25_B','Q26_B','Q27_B','Q28_B','Q19_S'])assert.equal(r.asked[key],false,key);
+ assert.equal(r.answers.Q27_B__7_text,undefined);
+ const changed=packet('3.1',{Q18_S:5,Q18_B:1,Q26_S:1,Q27_S:[1],Q28_S:[3],Q28_S__3_text:'stale'}),chosen=h.ctx.canonicalRecord_(changed);
+ assert.equal(chosen.asked.Q27_S,true);assert.equal(chosen.asked.Q28_S,false);assert.equal(chosen.answers.Q28_S__3_text,undefined);
+ const none=packet('3.1',{Q18_S:1,Q18_B:1,Q12:0,Q24:0}),neither=h.ctx.canonicalRecord_(none);
+ assert.equal(neither.asked.Q12,true);assert.equal(neither.flat.V_Q12_band,0);assert.equal(neither.asked.Q24,false);assert.equal(neither.asked.Q31,false);
 });
-test('historical or malformed versions are rejected without writes',()=>{
- const h=harness();for(const version of ['2.0','2.1','2.5','__proto__','constructor','toString',2.4,null]){
-  const p=packet('2.4');p.schemaVersion=version;assert.match(h.submit(p),/version is no longer accepted/);
- }assert.equal(h.state.writes.length,0);
+test('3.1 charging is Q29 and Q30 categories reject obsolete 99, zero code, and numeric amounts',()=>{
+ const h=harness();for(const value of [1,2,3,4,5])assert.match(h.submit(packet('3.1',{Q29:5,Q30:value})),/has been saved/);
+ for(const value of [0,99,1.5,6])assert.match(h.submit(packet('3.1',{Q29:5,Q30:value})),/could not be saved/);
+ const r=h.ctx.canonicalRecord_(packet('3.1',{Q29:1,Q30:99}));assert.equal(r.answers.Q30,undefined);assert.equal(r.asked.Q30,false);
+ const q=currentSchema.sections.flatMap(s=>s.questions).find(q=>q.id==='Q30');assert.equal(q.options[0].interval.lower,0);assert.equal(q.options[0].interval.lowerInclusive,true);
 });
-test('setup validates only exact 217 headers and never writes or creates a table',()=>{
- const h=harness();assert.deepEqual(clone(h.ctx.setupSurveySheet()),{columns:217,mutated:false});assert.equal(h.state.writes.length,0);
+test('combined 3.1 weekly usage preserves explicit zero and does not force pricing skips',()=>{
+ const h=harness();const p=packet('3.1',{Q18_S:5,Q18_B:1,Q24:0,Q25_S:1,Q26_S:4}),r=h.ctx.canonicalRecord_(p);
+ assert.equal(r.flat.V_Q24_band,0);assert.equal(r.asked.Q26_S,true);assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('v3_1__V_Q24_band'),'0');assert.equal(h.cell('v3_1__V_Q24_band__asked'),'1');
+ for(const v of [99,.5,6])assert.match(h.submit(packet('3.1',{Q24:v})),/could not be saved/);
+ assert.match(h.submit(packet('3.1',{Q24_S:1})),/unknown question/);
+});
+test('legacy 2.4 exclusive None and Q14 unknown retain their old semantics',()=>{
+ const h=harness();assert.match(h.submit(packet('2.4',{Q8:[9],Q14:99})),/has been saved/);assert.equal(h.cell('V_Q8_9'),'1');assert.equal(h.cell('V_Q14'),'');assert.equal(h.cell('V_Q14__asked'),'1');
+ assert.match(h.submit(packet('2.4',{Q8:[9,1]})),/could not be saved/);
+ for(const v of ['2.2','2.3'])assert.match(h.submit(packet(v,{Q8:[9]})),/could not be saved/);
+ assert.match(h.submit(packet('3.1',{Q8:[9]})),/could not be saved/);assert.match(h.submit(packet('3.1',{Q14:99})),/could not be saved/);
+});
+test('unsupported versions and prototype names reject before storage',()=>{
+ const h=harness();for(const version of ['2.0','2.1','3.0','3.2','__proto__','constructor','toString',3.1,null]){const p=packet('3.1');p.schemaVersion=version;assert.match(h.submit(p),/version is no longer accepted/);}
+ assert.equal(h.state.writes.length,0);
+});
+
+test('setup validates only exact 413 headers and never writes or creates a table',()=>{
+ const h=harness();assert.deepEqual(clone(h.ctx.setupSurveySheet()),{columns:totalWidth,mutated:false});assert.equal(h.state.writes.length,0);
  const old=harness({upgraded:false});assert.throws(()=>old.ctx.setupSurveySheet());assert.equal(old.state.writes.length,0);
  delete h.sheets.Responses;assert.throws(()=>h.ctx.setupSurveySheet());assert.equal(h.state.writes.length,0);
  assert.doesNotMatch(source,/\.insertSheet\(|\.deleteSheet\(|\.setName\(/);assert.equal(h.ctx.consolidateResponses,undefined);
 });
-test('before upgrade both previous versions write exactly 215 columns and 2.4 is refused',()=>{
- const h=harness({upgraded:false});for(const v of ['2.2','2.3'])assert.match(h.submit(packet(v)),/has been saved/);
- assert.equal(h.state.writes.length,2);assert.ok(h.state.writes.every(w=>w.width===215));assert.match(h.submit(packet('2.4')),/not ready/);assert.equal(h.state.writes.length,2);
+test('before upgrade all three previous versions write exactly 217 columns and 3.1 is refused',()=>{
+ const h=harness({upgraded:false});for(const v of ['2.2','2.3','2.4'])assert.match(h.submit(packet(v)),/has been saved/);
+ assert.equal(h.state.writes.length,3);assert.ok(h.state.writes.every(w=>w.width===priorWidth));assert.match(h.submit(packet('3.1')),/not ready/);assert.equal(h.state.writes.length,3);
 });
 test('malformed or missing unified headers never divert submissions into any other table',()=>{
- for(const alteration of [h=>h.sheets.Responses.data[0][0]='wrong',h=>h.sheets.Responses.data[0][215]='unknown',h=>{h.sheets.Responses.maxColumns=218;h.sheets.Responses.data[0][217]='unexpected';},h=>delete h.sheets.Responses]){
-  const h=harness();alteration(h);for(const v of ['2.2','2.3','2.4'])assert.match(h.submit(packet(v)),/could not be saved/);assert.equal(h.state.writes.length,0);
+ for(const alteration of [h=>h.sheets.Responses.data[0][0]='wrong',h=>h.sheets.Responses.data[0][217]='unknown',h=>{h.sheets.Responses.maxColumns=totalWidth+1;h.sheets.Responses.data[0][totalWidth]='unexpected';},h=>delete h.sheets.Responses]){
+  const h=harness();alteration(h);for(const v of ['2.2','2.3','2.4','3.1'])assert.match(h.submit(packet(v)),/could not be saved/);assert.equal(h.state.writes.length,0);
  }
 });
 test('append-only upgrade preserves every old cell including digest/formula text and blank row gaps',()=>{
- const rows=[rowFor(packet('2.2',{Q33:'=formula text'})),[],rowFor(packet('2.3'))],h=harness({upgraded:false,rows}),before=original215(h);
+ const rows=[rowFor(packet('2.2',{Q33:'=formula text'})),[],rowFor(packet('2.3'))],h=harness({upgraded:false,rows}),before=originalPrefix(h);
  const result=h.ctx.upgradeUnifiedHeaders();assert.equal(result.historicalRows,2);assert.equal(result.priorColumnsUnchanged,true);assert.equal(h.state.locked,false);
- assert.deepEqual(original215(h),before);assert.deepEqual(h.sheets.Responses.data[0],headers);assert.equal(h.cell('V_Q8_9__asked',1),'0');assert.equal(h.cell('V_Q8_9__asked',2),'');assert.equal(h.cell('V_Q8_9__asked',3),'0');
- assert.ok(h.state.writes.every(w=>w.column===216&&w.width===2));assert.deepEqual(h.state.expansions,[{after:215,count:2}]);
- assert.match(h.submit(packet('2.4')),/has been saved/);
+ assert.deepEqual(originalPrefix(h),before);assert.deepEqual(h.sheets.Responses.data[0],headers);assert.equal(h.cell(firstNew+'__asked',1),'0');assert.equal(h.cell(firstNew+'__asked',2),'');assert.equal(h.cell(firstNew+'__asked',3),'0');
+ assert.ok(h.state.writes.every(w=>w.column===218&&w.width===extraWidth));assert.deepEqual(h.state.expansions,[{after:priorWidth,count:extraWidth}]);
+ assert.match(h.submit(packet('3.1')),/has been saved/);
 });
-test('empty table upgrades only the two headers and does not invent response rows',()=>{
- const h=harness({upgraded:false}),before=original215(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(original215(h),before);assert.equal(h.sheets.Responses.getLastRow(),1);assert.deepEqual(h.state.writes,[{row:1,column:216,count:1,width:2}]);
+test('empty table upgrades only the new headers and does not invent response rows',()=>{
+ const h=harness({upgraded:false}),before=originalPrefix(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),before);assert.equal(h.sheets.Responses.getLastRow(),1);assert.deepEqual(h.state.writes,[{row:1,column:218,count:1,width:extraWidth}]);
 });
 test('existing spare columns are reused without adding columns or changing any old cells',()=>{
- const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))],columns:230}),before=original215(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(original215(h),before);assert.equal(h.state.expansions.length,0);
+ const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))],columns:totalWidth+13}),before=originalPrefix(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),before);assert.equal(h.state.expansions.length,0);
 });
-test('completed upgrade retries are read-only, including after new 2.4 rows arrive',()=>{
- const h=harness({upgraded:false,rows:[rowFor(packet('2.2')),rowFor(packet('2.3'))]});h.ctx.upgradeUnifiedHeaders();h.submit(packet('2.4'));
+test('completed upgrade retries are read-only, including after new 3.1 rows arrive',()=>{
+ const h=harness({upgraded:false,rows:[rowFor(packet('2.2')),rowFor(packet('2.3'))]});h.ctx.upgradeUnifiedHeaders();h.submit(packet('3.1'));
  const before=clone(h.sheets.Responses.data),writes=h.state.writes.length;assert.equal(h.ctx.upgradeUnifiedHeaders().alreadyComplete,true);assert.deepEqual(h.sheets.Responses.data,before);assert.equal(h.state.writes.length,writes);
 });
 test('duplicate old receipt survives upgrade without changing original timestamp or digest',()=>{
@@ -183,27 +221,27 @@ test('duplicate old receipt survives upgrade without changing original timestamp
 });
 test('expansion, data-write, and readback failures preserve old cells and safely retry',()=>{
  for(const flag of ['failExpand','failWrite','throwAfterExtraWrite','corruptExtraRead']){
-  const h=harness({upgraded:false,rows:[rowFor(packet('2.2'))]}),before=original215(h);h.state[flag]=true;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(original215(h),before);assert.equal(h.state.locked,false);
-  h.state[flag]=false;assert.match(h.submit(packet('2.4')),/not ready/);assert.equal(h.ctx.upgradeUnifiedHeaders().columns,217);assert.deepEqual(original215(h),before);
+  const h=harness({upgraded:false,rows:[rowFor(packet('2.2'))]}),before=originalPrefix(h);h.state[flag]=true;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(originalPrefix(h),before);assert.equal(h.state.locked,false);
+  h.state[flag]=false;assert.match(h.submit(packet('3.1')),/not ready/);assert.equal(h.ctx.upgradeUnifiedHeaders().columns,totalWidth);assert.deepEqual(originalPrefix(h),before);
  }
 });
 test('a failed or partial final header write lets old submissions continue, then retry includes them',()=>{
  for(const flag of ['failHeaderWrite','partialHeaderFailure']){
   const h=harness({upgraded:false,rows:[rowFor(packet('2.2'))]});h.state[flag]=true;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());h.state[flag]=false;
-  assert.match(h.submit(packet('2.4')),/not ready/);assert.match(h.submit(packet('2.3')),/has been saved/);const before=original215(h);
-  h.ctx.upgradeUnifiedHeaders();assert.deepEqual(original215(h),before);assert.equal(h.cell('V_Q8_9__asked',2),'0');
+  assert.match(h.submit(packet('3.1')),/not ready/);assert.match(h.submit(packet('2.3')),/has been saved/);const before=originalPrefix(h);
+  h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),before);assert.equal(h.cell(firstNew+'__asked',2),'0');
  }
 });
 test('flush failure before or after header commit retries without modifying old cells',()=>{
  for(const flush of [1,2]){
-  const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))]}),before=original215(h);h.state.failFlushAt=flush;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(original215(h),before);
-  h.state.failFlushAt=0;const result=h.ctx.upgradeUnifiedHeaders();assert.equal(result.alreadyComplete,flush===2);assert.deepEqual(original215(h),before);
+  const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))]}),before=originalPrefix(h);h.state.failFlushAt=flush;assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(originalPrefix(h),before);
+  h.state.failFlushAt=0;const result=h.ctx.upgradeUnifiedHeaders();assert.equal(result.alreadyComplete,flush===2);assert.deepEqual(originalPrefix(h),before);
  }
 });
 test('multiple batches initialize only new columns and a retry keeps all 501 prior rows',()=>{
- const rows=Array.from({length:501},()=>rowFor(packet('2.3'))),h=harness({upgraded:false,rows}),before=original215(h);h.ctx.upgradeUnifiedHeaders();
- assert.deepEqual(original215(h),before);assert.deepEqual(h.state.writes.filter(w=>w.row>1).map(w=>w.count),[250,250,1]);
- for(let i=1;i<=501;i++){assert.equal(h.cell('V_Q8_9',i),'');assert.equal(h.cell('V_Q8_9__asked',i),'0');}
+ const rows=Array.from({length:501},()=>rowFor(packet('2.3'))),h=harness({upgraded:false,rows}),before=originalPrefix(h);h.state.boundReads=true;h.ctx.upgradeUnifiedHeaders();h.state.boundReads=false;
+ assert.deepEqual(originalPrefix(h),before);assert.deepEqual(h.state.writes.filter(w=>w.row>1).map(w=>w.count),[100,100,100,100,100,1]);
+ for(let i=1;i<=501;i++){assert.equal(h.cell(firstNew,i),'');assert.equal(h.cell(firstNew+'__asked',i),'0');}
  assert.equal(h.ctx.upgradeUnifiedHeaders().historicalRows,501);
 });
 test('same script lock prevents a concurrent submission or upgrade from crossing the commit point',()=>{
@@ -214,29 +252,96 @@ test('same script lock prevents a concurrent submission or upgrade from crossing
 test('external change to an old cell or response count is detected before headers commit',()=>{
  for(const edit of [h=>h.sheets.Responses.data[1][8]='manual change',h=>h.sheets.Responses.data.push(rowFor(packet('2.3')))]){
   const h=harness({upgraded:false,rows:[rowFor(packet('2.2'))]});h.state.onExtraWrite=()=>edit(h);assert.throws(()=>h.ctx.upgradeUnifiedHeaders(),/readback failed/);
-  assert.notDeepEqual(h.sheets.Responses.data[0],headers);assert.match(h.submit(packet('2.4')),/not ready/);const updated=original215(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(original215(h),updated);
+  assert.notDeepEqual(h.sheets.Responses.data[0],headers);assert.match(h.submit(packet('3.1')),/not ready/);const updated=originalPrefix(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),updated);
  }
 });
 test('unknown new-column contents or unexpected historical version are never overwritten',()=>{
- for(const alter of [h=>{h.sheets.Responses.data[1][215]='1';},h=>{h.sheets.Responses.data[1][216]='1';},h=>{h.sheets.Responses.data[1][2]='2.4';},h=>{h.sheets.Responses.data[0][215]='incorrect';}]){
-  const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))],columns:217});alter(h);const before=clone(h.sheets.Responses.data);assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(clone(h.sheets.Responses.data),before);assert.equal(h.state.writes.length,0);
+ for(const alter of [h=>{h.sheets.Responses.data[1][217]='1';},h=>{h.sheets.Responses.data[1][218]='1';},h=>{h.sheets.Responses.data[1][2]='3.1';},h=>{h.sheets.Responses.data[0][217]='incorrect';}]){
+  const h=harness({upgraded:false,rows:[rowFor(packet('2.3'))],columns:totalWidth});alter(h);const before=clone(h.sheets.Responses.data);assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(clone(h.sheets.Responses.data),before);assert.equal(h.state.writes.length,0);
  }
 });
 test('same ID same digest is idempotent while changed answers or changed version cannot overwrite',()=>{
- const h=harness(),p=packet('2.4');assert.match(h.submit(p),/has been saved/);const before=clone(h.sheets.Responses.data);assert.match(h.submit(p),/already received/);assert.deepEqual(h.sheets.Responses.data,before);
- p.answers.Q8=[1];assert.match(h.submit(p),/different answers/);assert.deepEqual(h.sheets.Responses.data,before);
+ const h=harness(),p=packet('3.1');assert.match(h.submit(p),/has been saved/);const before=clone(h.sheets.Responses.data);assert.match(h.submit(p),/already received/);assert.deepEqual(h.sheets.Responses.data,before);
+ p.answers.Q8=[2];assert.match(h.submit(p),/different answers/);assert.deepEqual(h.sheets.Responses.data,before);
  const old=packet('2.3');old.responseId=p.responseId;assert.match(h.submit(old),/different answers/);assert.deepEqual(h.sheets.Responses.data,before);
 });
 test('submission write/flush failures never fake success and retries are safe',()=>{
- const h=harness(),p=packet('2.4');h.state.failWrite=true;assert.match(h.submit(p),/could not be saved/);assert.equal(h.sheets.Responses.getLastRow(),1);assert.equal(h.state.locked,false);
+ const h=harness(),p=packet('3.1');h.state.failWrite=true;assert.match(h.submit(p),/could not be saved/);assert.equal(h.sheets.Responses.getLastRow(),1);assert.equal(h.state.locked,false);
  h.state.failWrite=false;h.state.failFlushAt=1;assert.match(h.submit(p),/could not be saved/);assert.equal(h.sheets.Responses.getLastRow(),2);h.state.failFlushAt=0;assert.match(h.submit(p),/already received/);assert.equal(h.sheets.Responses.getLastRow(),2);
 });
 test('formula safety, privacy, malformed payload rejection, and trusted return links remain intact',()=>{
- const h=harness(),p=packet('2.4',{Q33:'=IMPORTDATA("private")'});assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('V_Q33'),"'=IMPORTDATA(\"private\")");
+ const h=harness(),p=packet('3.1',{Q33:'=IMPORTDATA("private")'});assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('v3_1__V_Q33'),"'=IMPORTDATA(\"private\")");
  const get=h.ctx.doGet().html;assert.ok(!get.includes('IMPORTDATA'));assert.ok(!get.includes(h.props.SPREADSHEET_ID));
- for(const version of ['2.2','2.3','2.4'])for(const patch of [{Q1:0},{UNAUTHORIZED:'x'},{Q2:{}},{Q24_S:[1]},{Q20_S:''}])assert.match(h.submit(packet(version,patch)),/could not be saved/);
- const attacker=packet('2.4');attacker.returnUrl='https://attacker.invalid';const html=h.submit(attacker);assert.match(html,/unsupported fields/);assert.ok(!html.includes('attacker.invalid'));assert.ok(!h.state.logs.some(s=>s.includes('IMPORTDATA')));
+ for(const version of ['2.2','2.3','2.4','3.1'])for(const patch of [{Q1:0},{UNAUTHORIZED:'x'},{Q2:{}},{Q24_S:[1]},{Q20_S:''}])assert.match(h.submit(packet(version,patch)),/could not be saved/);
+ const attacker=packet('3.1');attacker.returnUrl='https://attacker.invalid';const html=h.submit(attacker);assert.match(html,/unsupported fields/);assert.ok(!html.includes('attacker.invalid'));assert.ok(!h.state.logs.some(s=>s.includes('IMPORTDATA')));
 });
 test('the release has exactly one deployable Apps Script source file',()=>{
  assert.deepEqual(fs.readdirSync(root).filter(name=>name.endsWith('.gs')),['UnifiedCollector.gs']);
+});
+
+test('upgrade fills every one of the 196 added cells correctly for all three historical versions',()=>{
+ const rows=['2.2','2.3','2.4'].map(v=>rowFor(packet(v))),h=harness({upgraded:false,rows}),before=originalPrefix(h);
+ h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),before);
+ for(let row=1;row<=3;row++)for(const field of headers.slice(priorWidth))assert.equal(h.cell(field,row),field.endsWith('__asked')?'0':'',field);
+});
+test('failure between upgrade batches safely resumes and includes an intervening old-version response',()=>{
+ const h=harness({upgraded:false,rows:Array.from({length:205},()=>rowFor(packet('2.4')))}),before=originalPrefix(h);
+ h.state.onExtraWrite=()=>{h.state.failWrite=true;};assert.throws(()=>h.ctx.upgradeUnifiedHeaders());assert.deepEqual(originalPrefix(h),before);
+ h.state.failWrite=false;assert.match(h.submit(packet('3.1')),/not ready/);assert.match(h.submit(packet('2.4')),/has been saved/);
+ const afterLegacyWrite=originalPrefix(h);h.ctx.upgradeUnifiedHeaders();assert.deepEqual(originalPrefix(h),afterLegacyWrite);assert.equal(h.sheets.Responses.getLastRow(),207);
+ for(let row=1;row<=206;row++)for(const field of headers.slice(priorWidth))assert.equal(h.cell(field,row),field.endsWith('__asked')?'0':'');
+});
+
+test('screenshot backend 1: Q1 No clears later answers and cannot write any row',()=>{
+ const h=harness(),p=packet('3.1',{Q1:0}),engine=h.ctx.engineForVersion_('3.1');
+ assert.deepEqual(clone(engine.cleanAnswers(engine.schema,p.answers)),{Q1:0});assert.match(h.submit(p),/could not be saved/);assert.equal(h.state.writes.length,0);
+});
+test('screenshot backend 2: Q13 No skips Q14-Q16 and keeps liking/interest questions',()=>{
+ const h=harness(),p=packet('3.1',{Q13:0,Q14:4,Q15:[4],Q15__4_text:'stale',Q16:5}),r=h.ctx.canonicalRecord_(p);
+ for(const id of ['Q14','Q15','Q16'])assert.equal(r.asked[id],false);
+ for(const id of ['Q13','Q17_S','Q17_B','Q18_S','Q18_B'])assert.equal(r.asked[id],true);
+ assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('v3_1__V_Q14__asked'),'0');assert.equal(h.cell('v3_1__V_Q15_Other_txt'),'');
+});
+test('screenshot backend 3: Q19 is stored only for each product rated uninterested',()=>{
+ const h=harness();for(const [S,B] of [[1,5],[5,1],[5,5],[1,1]]){
+  const r=h.ctx.canonicalRecord_(packet('3.1',{Q18_S:S,Q18_B:B}));
+  assert.equal(r.asked.Q19_S,S===1);assert.equal(r.asked.Q19_B,B===1);
+ }
+});
+test('screenshot backend 4: both uninterested skip Q24-Q28 and Q31-Q32 but keep charger and comment',()=>{
+ const h=harness(),r=h.ctx.canonicalRecord_(packet('3.1',{Q18_S:1,Q18_B:1,Q29:5}));
+ for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q27_B','Q28_S','Q28_B','Q31','Q32'])assert.equal(r.asked[key],false,key);
+ for(const key of ['Q19_S','Q19_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q29','Q30','Q33'])assert.equal(r.asked[key],true,key);
+});
+test('screenshot backend 5: all 16 S/B plan combinations show only the corresponding Q27 or Q28',()=>{
+ const h=harness();for(const S of [1,2,3,4])for(const B of [1,2,3,4]){
+  const p=packet('3.1',{Q18_S:5,Q18_B:5,Q26_S:S,Q26_B:B}),r=h.ctx.canonicalRecord_(p);
+  for(const [product,code] of [['S',S],['B',B]]){assert.equal(r.asked['Q27_'+product],code<4);assert.equal(r.asked['Q28_'+product],code===4);}
+  assert.match(h.submit(p),/has been saved/);
+ }
+});
+test('screenshot backend 6: Q29=1 removes stale Q30 independently of product interest',()=>{
+ const h=harness(),p=packet('3.1',{Q18_S:5,Q18_B:5,Q29:1,Q30:5}),r=h.ctx.canonicalRecord_(p);
+ assert.equal(r.answers.Q30,undefined);assert.equal(r.asked.Q30,false);assert.equal(r.asked.Q26_S,true);
+ assert.match(h.submit(p),/has been saved/);assert.equal(h.cell('v3_1__V_Q30_band'),'');assert.equal(h.cell('v3_1__V_Q30_band__asked'),'0');
+});
+test('screenshot backend 7: both scalar Q3 Other and multi Q8 Other are mandatory and clear on deselection',()=>{
+ const h=harness();for(const id of ['Q3','Q8']){
+  const detail=id+'__8_text',selection=id==='Q3'?8:[8];
+  assert.match(h.submit(packet('3.1',{[id]:selection,[detail]:''})),/could not be saved/);
+  const p=packet('3.1',{[id]:selection,[detail]:'Specified other'}),r=h.ctx.canonicalRecord_(p);assert.equal(r.flat['V_'+id+'_Other_txt'],'Specified other');assert.match(h.submit(p),/has been saved/);
+  const changed=h.ctx.canonicalRecord_(packet('3.1',{[id]:id==='Q3'?1:[1],[detail]:'stale'}));assert.equal(changed.answers[detail],undefined);assert.equal(changed.flat['V_'+id+'_Other_txt'],'');
+ }
+});
+test('screenshot backend 8: per-product price definitions and stable plan codes/order survive server canonicalization',()=>{
+ const h=harness(),schema=h.ctx.engineForVersion_('3.1').schema;
+ assert.deepEqual(clone(schema.plansByProduct.S.map(p=>p.price)),['$0.25 per minute','$39.99 per month','$14.99 per month']);
+ assert.deepEqual(clone(schema.plansByProduct.B.map(p=>p.price)),['$0.20 per minute','$31.99 per month','$11.99 per month']);
+ assert.match(schema.plansByProduct.S[1].description,/45 minutes/);assert.match(schema.plansByProduct.B[1].description,/60 minutes/);
+ assert.match(schema.plansByProduct.S[2].description,/\$0\.20 per extra minute/);assert.match(schema.plansByProduct.B[2].description,/\$0\.16 per extra minute/);
+ for(const order of [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]){
+  const p=packet('3.1',{Q18_S:5,Q18_B:5,Q26_S:2,Q26_B:4});p.planOrder=order;const r=h.ctx.canonicalRecord_(p);
+  assert.deepEqual(clone(r.planOrder),order.map(String));assert.equal(r.flat.V_Q26_S,2);assert.equal(r.flat.V_Q26_B,4);assert.match(h.submit(p),/has been saved/);
+ }
+ const bad=packet('3.1');bad.planOrder=[1,2,4];assert.match(h.submit(bad),/display order is invalid/);
 });

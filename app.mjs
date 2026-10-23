@@ -1,5 +1,6 @@
-import {productIntroHtml} from './product-intro.mjs?v=2.4';
-import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, updateMultiSelection, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=2.4';
+import {questionsForSection, pricingOptionsHtml, SCREEN_OUT_TEXT} from './presentation.mjs?v=3.1';
+import {productIntroHtml} from './product-intro.mjs?v=3.1';
+import {PRODUCT_NAMES, allQuestions, keyFor, otherKey, isVisible, visibleProducts, cleanAnswers, validateItem, validateAll, updateMultiSelection, shuffledPlans, orderedOptions, makeRecord, recordsToCsv} from './logic.mjs?v=3.1';
 
 const app=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,12 +11,13 @@ const storageKey='ez2-survey-v2';
 function freshState(){return {version:schema.version,responseId:crypto.randomUUID(),startedAt:new Date().toISOString(),completedAt:null,planOrder:shuffledPlans(),answers:{},sectionId:schema.sections[0].id,review:false};}
 function save(){try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{storageAvailable=false;}}
 function shownSections(){return schema.sections.filter(section=>section.questions.some(q=>isVisible(q,state.answers)));}
-function shownQuestions(section){return section.questions.filter(q=>isVisible(q,state.answers) && (q.id!=='Q16' || (state.answers.Q15_S!==undefined && state.answers.Q15_B!==undefined)) && (q.id!=='Q17' || (state.answers.Q16_S!==undefined && state.answers.Q16_B!==undefined)));}
+function shownQuestions(section){return questionsForSection(section,state.answers);}
 function errorHtml(key){const error=errors.find(e=>e.key===key);return error?`<p class="field-error" id="err-${esc(key)}">${esc(error.message)}</p>`:'';}
 function selected(value, option){return Array.isArray(value)?value.some(v=>same(v,option)):same(value,option);}
-function inputHtml(q,key){
+function inputHtml(q,key,product=null){
   const value=state.answers[key],type=q.type.replace('product_','');
   const invalid=errors.some(e=>e.key===key)?' aria-invalid="true"':'';
+  if(q.id==='Q26')return pricingOptionsHtml(schema,q,product,key,value,state.planOrder)+errorHtml(key);
   if(type==='number')return `<input id="${esc(key)}" class="text-input number-input" type="number" inputmode="${q.decimals===0?'numeric':'decimal'}" data-key="${esc(key)}" data-kind="number" value="${esc(value)}" ${q.min!==undefined?`min="${q.min}"`:''} ${q.max!==undefined?`max="${q.max}"`:''} step="${q.decimals!==undefined?10**-q.decimals:'any'}" aria-label="${esc(q.text)}"${invalid}>${errorHtml(key)}`;
   if(type==='text')return `<${q.id==='Q33'?'textarea':'input'} id="${esc(key)}" class="text-input" ${q.id==='Q33'?'rows="3"':'type="text"'} data-key="${esc(key)}" data-kind="text" ${q.maxLength?`maxlength="${q.maxLength}"`:''} aria-label="${esc(q.text)}"${invalid}${q.id==='Q33'?`>${esc(value)}</textarea>`:` value="${esc(value)}">`}${q.maxLength?`<p class="hint">Up to ${q.maxLength} characters.</p>`:''}${errorHtml(key)}`;
   if(type==='scale'){
@@ -23,11 +25,11 @@ function inputHtml(q,key){
     return `<div class="scale" style="--scale-count:${options.length};${options.length<=6?`grid-template-columns:repeat(${options.length},minmax(0,1fr))`:''}" role="radiogroup" aria-label="${esc(q.text)}">${options.map(o=>`<label title="${esc(o.label)}"><input type="radio" name="${esc(key)}" data-key="${esc(key)}" data-kind="scale" value="${o.value}" ${selected(value,o.value)?'checked':''} aria-label="${esc(o.label)}"><span aria-hidden="true">${o.value}</span></label>`).join('')}</div><div class="scale-labels"><span>${esc(options[0].label)}</span><span>${esc(options.at(-1).label)}</span></div>${errorHtml(key)}`;
   }
   return `<div class="options">${orderedOptions(q,state.planOrder).map(o=>{
-    const chosen=selected(value,o.value), detailKey=otherKey(key,o), plan=q.id==='Q27'?schema.plans.find(p=>same(p.value,o.value)):null;
-    return `<div><label class="option"><input type="${type==='multi'?'checkbox':'radio'}" name="${esc(key)}" data-key="${esc(key)}" data-kind="${type}" value="${esc(o.value)}" ${chosen?'checked':''}><span class="option-body"><span class="option-title">${esc(o.label)}</span>${plan?`<span class="option-detail">${esc(plan.description)}</span>`:''}</span></label>${o.other&&chosen?`<div class="other-input"><label for="${esc(detailKey)}">${esc(o.otherPrompt||'Please specify.')}${o.otherRequired?' *':''}</label><input id="${esc(detailKey)}" class="text-input" data-key="${esc(detailKey)}" data-kind="text" type="text" value="${esc(state.answers[detailKey])}" maxlength="${o.otherMaxLength||100}">${errorHtml(detailKey)}</div>`:''}</div>`;
+    const chosen=selected(value,o.value), detailKey=otherKey(key,o);
+    return `<div><label class="option"><input type="${type==='multi'?'checkbox':'radio'}" name="${esc(key)}" data-key="${esc(key)}" data-kind="${type}" value="${esc(o.value)}" ${chosen?'checked':''}><span class="option-body"><span class="option-title">${esc(o.label)}</span></span></label>${o.other&&chosen?`<div class="other-input"><label for="${esc(detailKey)}">${esc(o.otherPrompt||'Please specify.')}${o.otherRequired?' *':''}</label><input id="${esc(detailKey)}" class="text-input" data-key="${esc(detailKey)}" data-kind="text" type="text" value="${esc(state.answers[detailKey])}" maxlength="${o.otherMaxLength||100}">${errorHtml(detailKey)}</div>`:''}</div>`;
   }).join('')}</div>${errorHtml(key)}`;
 }
-function questionHtml(q){return `<fieldset class="question" id="question-${q.id}"><legend><span class="q-number">${esc(q.id)}</span>${esc(q.text)}${q.required?'<span class="required" aria-label="required">*</span>':''}</legend>${q.help?`<p class="hint">${esc(q.help)}</p>`:''}${q.type.startsWith('product_')?visibleProducts(q,state.answers).map(p=>`<div class="product-block" role="group" aria-labelledby="label-${q.id}-${p}"><div class="product-title" id="label-${q.id}-${p}">${PRODUCT_NAMES[p]}</div>${inputHtml(q,keyFor(q,p))}</div>`).join(''):inputHtml(q,q.id)}</fieldset>`;}
+function questionHtml(q){return `<fieldset class="question" id="question-${q.id}"><legend><span class="q-number">${esc(q.id)}</span>${esc(q.text)}${q.required?'<span class="required" aria-label="required">*</span>':''}</legend>${q.help?`<p class="hint">${esc(q.help)}</p>`:''}${q.type.startsWith('product_')?visibleProducts(q,state.answers).map(p=>`<div class="product-block" role="group" aria-labelledby="label-${q.id}-${p}"><div class="product-title" id="label-${q.id}-${p}">${PRODUCT_NAMES[p]}</div>${inputHtml(q,keyFor(q,p),p)}</div>`).join(''):inputHtml(q,q.id)}</fieldset>`;}
 function startOver(){if(confirm('Clear your answers in this tab and start again?')){state=freshState();errors=[];save();render(true);}}
 function move(direction){const sections=shownSections(),index=sections.findIndex(s=>s.id===state.sectionId);state.sectionId=sections[Math.max(0,Math.min(sections.length-1,index+direction))].id;state.review=false;errors=[];save();render(true);}
 function next(){
@@ -57,7 +59,7 @@ function submit(){
 }
 function render(scroll=false){
   if(same(state.answers.Q1,0)){
-    app.innerHTML=`<div class="hero"><p class="kicker">THANK YOU FOR YOUR INTEREST</p><h1>Thank you for your time.</h1><p class="lead">This survey is for students currently enrolled at a large public university in the U.S.</p></div><div class="card"><p>No response has been submitted.</p><button class="secondary" id="change-screening">Change my answer</button></div>`;
+    app.innerHTML=`<div class="hero"><p class="kicker">THANK YOU FOR YOUR INTEREST</p><h1>Thank you for your time.</h1><p class="lead">${esc(SCREEN_OUT_TEXT)}</p></div><div class="card"><p>No response has been submitted.</p><button class="secondary" id="change-screening">Change my answer</button></div>`;
     document.querySelector('#change-screening').onclick=()=>{state.answers={};state.sectionId=schema.sections[0].id;state.review=false;save();render(true);};
     if(scroll){window.scrollTo({top:0});app.focus();}return;
   }
@@ -92,7 +94,7 @@ function render(scroll=false){
   if(scroll){window.scrollTo({top:0});app.focus();}
 }
 try{
-  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=2.4'),fetch('./config.json?v=2.4')]);
+  const [schemaResult,configResult]=await Promise.all([fetch('./survey.json?v=3.1'),fetch('./config.json?v=3.1')]);
   if(!schemaResult.ok||!configResult.ok)throw new Error('The survey configuration could not be loaded.');
   schema=await schemaResult.json();config=await configResult.json();
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');state=saved?.version===schema.version?saved:freshState();}catch{state=freshState();storageAvailable=false;}

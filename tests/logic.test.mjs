@@ -1,97 +1,122 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import {allQuestions, expandedQuestions, conditionMet, cleanAnswers, validateItem, validateAll, orderedOptions, shuffledPlans, makeRecord, recordsToCsv, verifyImportedRecord, otherKey} from '../logic.mjs';
-const schema=JSON.parse(await readFile(new URL('../survey.json',import.meta.url),'utf8'));
-const metadata={responseId:'11111111-1111-4111-a111-111111111111',startedAt:'2026-10-19T10:00:00.000Z',completedAt:'2026-10-19T10:05:00.000Z',planOrder:[3,1,2]};
-function filled(overrides={}){
-  let answers={Q1:1,Q12:1,Q16_S:2,Q16_B:2,Q22:1,Q27_S:1,Q27_B:1,...overrides};
-  for(let i=0;i<3;i++)for(const {q,key} of expandedQuestions(schema,answers)){
-    if(Object.hasOwn(answers,key))continue;
-    const type=q.type.replace('product_','');
-    answers[key]=type==='multi'?[q.options[0].value]:type==='text'?(q.required?'Test university':''):type==='single'?q.options[0].value:q.min??0;
-  }
-  return cleanAnswers(schema,answers);
-}
-test('schema has 33 unique questions and complete scale endpoints',()=>{
-  const questions=allQuestions(schema);assert.equal(questions.length,33);assert.equal(new Set(questions.map(q=>q.id)).size,33);
-  for(const q of questions.filter(q=>q.type.endsWith('scale')))assert.deepEqual(q.options.map(o=>o.value),Array.from({length:q.max-q.min+1},(_,i)=>q.min+i));
-});
-test('all 576 combinations of interests, experience, charging and plans validate',()=>{
+import {schema,questions,question,metadata,filled} from './helpers.mjs';
+import {conditionMet,expandedQuestions,cleanAnswers,validateItem,validateAll,orderedOptions,shuffledPlans,makeRecord,recordsToCsv,verifyImportedRecord,otherKey} from '../logic.mjs';
+
+test('all 1600 interest, experience, charger and plan combinations validate and route correctly',()=>{
   let count=0;
-  for(const S of [1,2,5])for(const B of [1,2,5])for(const exp of [1,2])for(const charge of [1,2])for(const sPlan of [1,2,3,4])for(const bPlan of [1,2,3,4]){
-    const answers=filled({Q16_S:S,Q16_B:B,Q12:exp,Q22:charge,Q27_S:sPlan,Q27_B:bPlan});assert.deepEqual(validateAll(schema,answers),[]);const r=makeRecord(schema,answers,metadata);
-    assert.equal(r.asked.Q26,true);assert.equal(r.asked.Q24_S,S>=2);assert.equal(r.asked.Q24_B,B>=2);assert.equal(r.asked.Q30,S>=2||B>=2);assert.equal(r.asked.Q23,charge>=2);assert.equal(r.asked.Q13,exp>=2);assert.equal(r.asked.Q28_S,S>=2&&sPlan<=3);assert.equal(r.asked.Q29_B,B>=2&&bPlan===4);count++;
+  for(const S of [1,2,3,4,5])for(const B of [1,2,3,4,5])for(const experience of [0,1])for(const charge of [1,5])for(const sPlan of [1,2,3,4])for(const bPlan of [1,2,3,4]){
+    const a=filled({Q18_S:S,Q18_B:B,Q13:experience,Q29:charge,Q26_S:sPlan,Q26_B:bPlan});
+    assert.deepEqual(validateAll(schema,a),[]);const r=makeRecord(schema,a,metadata);
+    for(const key of ['Q14','Q15','Q16'])assert.equal(r.asked[key],experience===1,key);
+    for(const key of ['Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q21_B','Q22_S','Q22_B','Q23_S','Q23_B','Q12','Q29','Q33'])assert.equal(r.asked[key],true,key);
+    for(const [p,interest,plan] of [['S',S,sPlan],['B',B,bPlan]]){
+      assert.equal(r.asked['Q19_'+p],interest===1);
+      for(const id of ['Q25','Q26'])assert.equal(r.asked[id+'_'+p],interest>1);
+      assert.equal(r.asked['Q27_'+p],interest>1&&plan<=3);
+      assert.equal(r.asked['Q28_'+p],interest>1&&plan===4);
+    }
+    for(const key of ['Q24','Q31','Q32'])assert.equal(r.asked[key],S>1||B>1,key);
+    assert.equal(r.asked.Q30,charge>1);count++;
   }
-  assert.equal(count,576);
-});
-test('ineligible response clears everything after the screener',()=>{assert.deepEqual(cleanAnswers(schema,{...filled(),Q1:0}),{Q1:0});assert.deepEqual(validateAll(schema,{Q1:0}),[]);});
-test('returning to change interest clears descendants and retains all-respondent attitudes',()=>{
-  const old=filled({Q27_S:1,Q27_B:4}),next=cleanAnswers(schema,{...old,Q16_S:1,Q16_B:1});
-  for(const key of ['Q24_S','Q27_S','Q28_S','Q29_B','Q30','Q31','Q32'])assert.equal(Object.hasOwn(next,key),false,key);
-  for(const key of ['Q26','Q15_S','Q15_B','Q18','Q19_S','Q19_B','Q20_S','Q21_B','Q22','Q33'])assert.ok(Object.hasOwn(next,key),key);
-});
-test('switching None to a plan clears rejection reasons and their text',()=>{
-  const old=filled({Q27_S:4,Q29_S:[3,6],Q29_S__3_text:'A weekly plan',Q29_S__6_text:'Other reason'});
-  assert.equal(validateAll(schema,old).length,0);
-  const next=cleanAnswers(schema,{...old,Q27_S:2});assert.equal(next.Q29_S,undefined);assert.equal(next.Q29_S__3_text,undefined);assert.equal(next.Q29_S__6_text,undefined);assert.ok(validateAll(schema,next).some(e=>e.key==='Q28_S'));
-});
-test('deselecting Other clears hidden free text and only selected Other is required',()=>{
-  const answers=filled({Q8:[8],Q8__8_text:''});assert.ok(validateAll(schema,answers).some(e=>e.key==='Q8__8_text'));
-  const next=cleanAnswers(schema,{...answers,Q8:[1]});assert.equal(next.Q8__8_text,undefined);assert.equal(validateAll(schema,next).length,0);
-});
-test('0 remains a real response; hidden values export blank with asked=0',()=>{
-  const r=makeRecord(schema,filled({Q16_S:1,Q16_B:2,Q15_B:0,Q24_B:0,Q26:0,Q30:0,Q31:0}),metadata);
-  assert.equal(r.flat.V_Q15_S,0);assert.equal(r.flat.V_Q15_S__asked,1);assert.equal(r.flat.V_Q24_band_S,'');assert.equal(r.flat.V_Q24_band_S__asked,0);assert.equal(r.flat.V_Q15_B,0);assert.equal(r.flat.V_Q15_B__asked,1);assert.equal(r.flat.V_Q24_band_B,0);
-});
-test('export contains exactly the 99 declared variables plus 99 asked indicators',()=>{
-  const r=makeRecord(schema,filled(),metadata),expected=allQuestions(schema).flatMap(q=>q.exportFields);
-  assert.equal(expected.length,99);assert.deepEqual(Object.keys(r.flat).filter(k=>!k.endsWith('__asked')).sort(),expected.sort());assert.equal(Object.keys(r.flat).length,198);
-});
-test('multi choice export is binary for asked choices and blank for hidden choices',()=>{
-  const r=makeRecord(schema,filled({Q8:[1,4],Q16_S:1,Q16_B:1}),metadata);assert.equal(r.flat.V_Q8_1,1);assert.equal(r.flat.V_Q8_2,0);assert.equal(r.flat.V_Q28_1_S,'');assert.equal(r.flat.V_Q28_1_S__asked,0);
-});
-test('numeric validation rejects missing, out-of-range, fractional and excessive decimal values',()=>{
-  const q=id=>allQuestions(schema).find(q=>q.id===id);
-  for(const value of ['',-1,8,2.5,false,{},'1e2'])assert.ok(validateItem(q('Q7'),'Q7',{Q7:value}).length,String(value));
-  assert.equal(validateItem(q('Q7'),'Q7',{Q7:0}).length,0);assert.ok(validateItem(q('Q23'),'Q23',{Q23:1.234}).length);
-  assert.ok(validateItem(q('Q1'),'Q1',{Q1:[1]}).length);
-});
-test('randomization keeps codes stable and None last',()=>{
-  const q=allQuestions(schema).find(q=>q.id==='Q27');assert.deepEqual(orderedOptions(q,[3,1,2]).map(o=>o.value),[3,1,2,4]);assert.deepEqual(shuffledPlans(()=>0).sort(),[1,2,3]);
-});
-test('CSV escapes commas, quotes, newline and formula-like text',()=>{
-  const r=makeRecord(schema,filled({Q2:'=HYPERLINK("x")',Q33:'a,b\n"c"'}),metadata),csv=recordsToCsv([r]);assert.ok(csv.startsWith('\uFEFF'));assert.ok(csv.includes("'=HYPERLINK"));assert.ok(csv.includes('"a,b\n""c"""'));assert.ok(csv.includes('response_id,schema_version'));
-});
-test('import rejects wrong version, malformed metadata, invalid answers and rebuilds flat values',()=>{
-  const record=makeRecord(schema,filled(),metadata);assert.throws(()=>verifyImportedRecord(schema,{...record,schemaVersion:'1'}));assert.throws(()=>verifyImportedRecord(schema,{...record,responseId:'x'}));assert.throws(()=>verifyImportedRecord(schema,{...record,answers:{...record.answers,Q7:8}}));assert.throws(()=>verifyImportedRecord(schema,{...record,answers:{Q1:0}}));assert.equal(verifyImportedRecord(schema,{...record,flat:{V_Q1:0}}).flat.V_Q1,1);
+  assert.equal(count,1600);
 });
 
-test('liking is answered by everyone and never controls interest routing',()=>{
-  for(const likingS of [0,1,10])for(const likingB of [0,1,10])for(const interestS of [1,5])for(const interestB of [1,5]){
-    const answers=filled({Q15_S:likingS,Q15_B:likingB,Q16_S:interestS,Q16_B:interestB});
-    const r=makeRecord(schema,answers,metadata);
-    assert.equal(r.asked.Q15_S,true);assert.equal(r.asked.Q15_B,true);
-    assert.equal(r.flat.V_Q15_S,likingS);assert.equal(r.flat.V_Q15_B,likingB);
-    assert.equal(r.asked.Q17_S,interestS===1);assert.equal(r.asked.Q17_B,interestB===1);
-    assert.equal(r.asked.Q24_S,interestS===5);assert.equal(r.asked.Q24_B,interestB===5);
-    assert.equal(r.asked.Q30,interestS===5||interestB===5);
+test('routing accepts only valid scalar codes for Q1, Q13, Q18, Q26 and Q29',()=>{
+  for(const value of [1,'1'])assert.equal(conditionMet('experienced',{Q1:1,Q13:value}),true);
+  for(const value of [undefined,null,'',0,2,5,99,1.5,[1],{},true,false,NaN,Infinity])assert.equal(conditionMet('experienced',{Q1:1,Q13:value}),false,JSON.stringify(value));
+  for(const value of [2,3,4,5,'2','3','4','5']){
+    assert.equal(conditionMet('interested_S',{Q1:1,Q18_S:value}),true);
+    assert.equal(conditionMet('charger_interest',{Q1:1,Q29:value}),true);
+  }
+  for(const value of [undefined,null,'',0,6,99,2.5,[2],{},true,false,NaN,Infinity]){
+    assert.equal(conditionMet('interested_S',{Q1:1,Q18_S:value}),false);
+    assert.equal(conditionMet('charger_interest',{Q1:1,Q29:value}),false);
+  }
+  for(const value of [[1],{},true,false,0,null])assert.equal(conditionMet('eligible',{Q1:value}),false);
+  for(const value of [[1],[4],{},true,2.5])for(const condition of ['chose_plan_S','chose_none_S'])assert.equal(conditionMet(condition,{Q1:1,Q18_S:5,Q26_S:value}),false);
+  for(const condition of Object.keys(schema.conditionDefinitions).filter(c=>c!=='always'))assert.equal(conditionMet(condition,{Q1:0,Q13:1,Q18_S:5,Q18_B:5,Q26_S:1,Q26_B:4,Q29:5}),false,condition);
+  assert.throws(()=>conditionMet('unknown',{Q1:1}),/Unknown/);
+});
+
+test('ineligible answers clear every downstream value and are not importable completed responses',()=>{
+  assert.deepEqual(cleanAnswers(schema,{...filled(),Q1:0}),{Q1:0});
+  assert.deepEqual(validateAll(schema,{Q1:0}),[]);
+  const r=makeRecord(schema,{Q1:0},metadata);assert.throws(()=>verifyImportedRecord(schema,r),/eligible/);
+});
+
+test('changing experience clears payment, locations, reliability and Other text',()=>{
+  const a=filled({Q15:[4],Q15__4_text:'Another setting'});
+  const next=cleanAnswers(schema,{...a,Q13:0});
+  for(const key of ['Q14','Q15','Q16','Q15__4_text'])assert.equal(next[key],undefined,key);
+  const r=makeRecord(schema,next,metadata);
+  for(const field of ['Q14','Q15','Q16'].flatMap(id=>question(id).exportFields)){assert.equal(r.flat[field],'');assert.equal(r.flat[field+'__asked'],0);}
+});
+
+test('changing interest clears only hidden descendants and retains general attitudes, budget and charging',()=>{
+  const next=cleanAnswers(schema,{...filled({Q26_B:4,Q28_B:[6],Q28_B__6_text:'Other reason'}),Q18_S:1,Q18_B:1});
+  for(const key of ['Q24','Q25_S','Q25_B','Q26_S','Q26_B','Q27_S','Q28_B','Q28_B__6_text','Q31','Q32'])assert.equal(next[key],undefined,key);
+  for(const key of ['Q12','Q17_S','Q17_B','Q18_S','Q18_B','Q20','Q21_S','Q22_B','Q23_S','Q29','Q30','Q33'])assert.ok(Object.hasOwn(next,key),key);
+  assert.ok(validateAll(schema,next).some(e=>e.key==='Q19_S'));
+});
+
+test('switching a plan or charging answer removes stale reasons and compensation',()=>{
+  const a=filled({Q26_S:4,Q28_S:[3,6],Q28_S__3_text:'A weekly plan',Q28_S__6_text:'Other reason'});
+  const next=cleanAnswers(schema,{...a,Q26_S:2,Q29:1});
+  for(const key of ['Q28_S','Q28_S__3_text','Q28_S__6_text','Q30'])assert.equal(next[key],undefined,key);
+  assert.ok(validateAll(schema,next).some(e=>e.key==='Q27_S'));
+});
+
+test('liking never controls interest routes, including lowest liking with highest interest',()=>{
+  for(const s of [0,1,10])for(const b of [0,1,10])for(const S of [1,5])for(const B of [1,5]){
+    const r=makeRecord(schema,filled({Q17_S:s,Q17_B:b,Q18_S:S,Q18_B:B}),metadata);
+    assert.equal(r.flat.V_Q17_S,s);assert.equal(r.flat.V_Q17_B,b);
+    assert.equal(r.asked.Q19_S,S===1);assert.equal(r.asked.Q19_B,B===1);
+    assert.equal(r.asked.Q26_S,S===5);assert.equal(r.asked.Q26_B,B===5);
   }
 });
 
-test('new categorical questions accept only declared codes',()=>{
-  for(const id of ['Q4','Q6','Q11']){
-    const q=allQuestions(schema).find(q=>q.id===id);
-    for(const option of q.options)assert.deepEqual(validateItem(q,id,{[id]:option.value}),[]);
-    for(const value of [0,20,1.5,'other'])assert.ok(validateItem(q,id,{[id]:value}).length);
+test('Q24 combined usage is one field and zero does not force pricing skips',()=>{
+  assert.equal(question('Q24').type,'single');assert.deepEqual(question('Q24').exportFields,['V_Q24_band']);
+  const r=makeRecord(schema,filled({Q24:0,Q12:0,Q25_S:1}),metadata);
+  assert.equal(r.flat.V_Q24_band,0);assert.equal(r.flat.V_Q24_band__asked,1);
+  assert.equal(r.asked.Q26_S,true);assert.equal(r.asked.Q26_B,true);
+  assert.equal(r.asked.Q24_S,undefined);assert.equal(r.asked.Q24_B,undefined);
+});
+
+test('every Other field is required, exported and removed for both scalar and multiple choice',()=>{
+  for(const q of questions.filter(q=>q.options.some(o=>o.other)))for(const p of q.products||[null])for(const option of q.options.filter(o=>o.other)){
+    const key=q.id+(p?'_'+p:''),detail=otherKey(key,option),field=p?option.otherFields[p]:option.otherField;
+    const override=q.id==='Q19'?{['Q18_'+p]:1}:q.id==='Q28'?{['Q26_'+p]:4}:{};
+    const selected=q.type.endsWith('multi')?[option.value]:option.value;
+    const a=filled({...override,[key]:selected,[detail]:'A specific explanation'});
+    const r=makeRecord(schema,a,metadata);assert.equal(r.flat[field],'A specific explanation');assert.equal(r.flat[field+'__asked'],1);
+    const missing={...a};delete missing[detail];assert.ok(validateAll(schema,missing).some(e=>e.key===detail));
+    const normal=q.options.find(o=>!o.other).value;
+    const next=cleanAnswers(schema,{...a,[key]:q.type.endsWith('multi')?[normal]:normal});assert.equal(next[detail],undefined);
+    const r2=makeRecord(schema,next,metadata);assert.equal(r2.flat[field],'');assert.equal(r2.flat[field+'__asked'],0);
   }
 });
 
-test('weekly use accepts category codes and uncertainty, rejecting former continuous-hour values',()=>{
-  const q=allQuestions(schema).find(q=>q.id==='Q24');
-  assert.equal(q.type,'product_single');assert.equal(q.measurement.unit,'hours_per_week');
-  for(const value of [0,1,2,3,4,5,6,99])assert.deepEqual(validateItem(q,'Q24_S',{Q24_S:value}),[]);
-  for(const value of [-1,.5,1.25,168,169,.123,7])assert.ok(validateItem(q,'Q24_S',{Q24_S:value}).length);
-  const r=makeRecord(schema,filled({Q16_S:5,Q24_S:2}),metadata);
-  assert.equal(r.flat.V_Q24_band_S,2);
+test('export has exactly 98 values plus 98 asked indicators; missing Q6 stays raw 99',()=>{
+  const r=makeRecord(schema,filled({Q6:99,Q8:[1,4]}),metadata),fields=questions.flatMap(q=>q.exportFields);
+  assert.equal(fields.length,98);assert.equal(Object.keys(r.flat).length,196);
+  assert.deepEqual(Object.keys(r.flat).filter(k=>!k.endsWith('__asked')).sort(),[...fields].sort());
+  assert.equal(r.answers.Q6,99);assert.equal(r.flat.V_Q6,'');assert.equal(r.flat.V_Q6__asked,1);
+  assert.equal(r.flat.V_Q8_1,1);assert.equal(r.flat.V_Q8_2,0);assert.equal(r.flat.V_Q8_4,1);
+  assert.equal(r.flat.V_Q8_9,undefined);
+});
+
+test('pricing randomization retains all stable codes and keeps None last',()=>{
+  for(const order of [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]])assert.deepEqual(orderedOptions(question('Q26'),order).map(o=>o.value),[...order,4]);
+  assert.deepEqual(shuffledPlans(()=>0).sort(),[1,2,3]);
+  assert.deepEqual(orderedOptions(question('Q27'),[3,1,2]),question('Q27').options);
+});
+
+test('CSV escapes text and refuses mixed versions; imported exports are always recomputed',()=>{
+  const r=makeRecord(schema,filled({Q2:'=HYPERLINK("x")',Q33:'a,b\n"c"'}),metadata);
+  const csv=recordsToCsv([r]);assert.ok(csv.startsWith('\uFEFF'));assert.match(csv,/'=HYPERLINK/);assert.ok(csv.includes('"a,b\n""c"""'));
+  assert.throws(()=>recordsToCsv([r,{...r,schemaVersion:'2.4'}]),/different survey versions/);
+  assert.equal(verifyImportedRecord(schema,{...r,flat:{V_Q1:0}}).flat.V_Q1,1);
+  for(const bad of [{schemaVersion:'2.4'},{responseId:'x'},{planOrder:[1,1,3]},{startedAt:'invalid'},{answers:[]},{answers:{...r.answers,Q7:8}},{answers:{...r.answers,Q3:8}}])assert.throws(()=>verifyImportedRecord(schema,{...r,...bad}));
 });
